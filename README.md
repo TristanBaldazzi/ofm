@@ -1,8 +1,3 @@
-Cahier des Charges
-
-Projet : Développement d’un panel de gestion pour les modèles OnlyFans  
-
-
 1. Contexte et Objectifs
 Le projet vise à centraliser, optimiser et automatiser la gestion des comptes de modèles sur des plateformes telles que OnlyFans, Instagram, TikTok, X, et Bluesky. Actuellement, de nombreuses tâches sont manuelles et chronophages, notamment la planification des publications, le partage, et la gestion des interactions.  
 

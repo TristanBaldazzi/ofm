@@ -12,12 +12,12 @@ interface User {
 }
 
 export default function CreateModel() {
-  const { id } = useParams(); // Récupère l'ID du formulaire depuis l'URL
+  const { id } = useParams(); // Récupère l'ID de l'entreprise depuis l'URL
   const [user, setUser] = useState<User | null>(null);
+  const [currentStep, setCurrentStep] = useState(1); // Étape actuelle
   const [name, setName] = useState("");
   const [socialMedia, setSocialMedia] = useState<string[]>([]);
   const [description, setDescription] = useState("");
-  const [photo, setPhoto] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const router = useRouter();
@@ -39,9 +39,8 @@ export default function CreateModel() {
     fetchUser();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  // Gestion de la soumission finale
+  const handleSubmit = async () => {
     if (!id) {
       setError("ID de l'entreprise manquant dans l'URL.");
       return;
@@ -54,7 +53,7 @@ export default function CreateModel() {
         {
           name,
           description,
-          companyId: id, // Passer l'ID de l'entreprise
+          companyId: id,
           socialMedia,
         },
         {
@@ -69,6 +68,20 @@ export default function CreateModel() {
     }
   };
 
+  // Gestion des étapes
+  const nextStep = () => {
+    if (currentStep === 1 && !name) return setError("Le nom est requis.");
+    if (currentStep === 2 && socialMedia.length === 0)
+      return setError("Au moins un réseau social est requis.");
+    setError(""); // Réinitialiser les erreurs
+    setCurrentStep((prev) => prev + 1);
+  };
+
+  const previousStep = () => {
+    setError(""); // Réinitialiser les erreurs
+    setCurrentStep((prev) => prev - 1);
+  };
+
   if (!user) return <LoadingSpinner />;
 
   return (
@@ -77,23 +90,38 @@ export default function CreateModel() {
         <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 w-full max-w-lg">
           <h1 className="text-xl font-bold mb-4">Créer un Modèle</h1>
 
+          {/* Affichage des erreurs */}
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
               {error}
             </div>
           )}
 
+          {/* Affichage du message de succès */}
           {successMessage && (
             <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
               {successMessage}
             </div>
           )}
 
-          <form onSubmit={handleSubmit}>
-            {/* Nom */}
-            <div className="mb-4">
+          {/* Étape actuelle */}
+          <div className="mb-6">
+            <p className="text-gray-600 text-sm">
+              Étape {currentStep} sur 3
+            </p>
+            <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+              <div
+                className={`bg-blue-500 h-2.5 rounded-full`}
+                style={{ width: `${(currentStep / 3) * 100}%` }}
+              ></div>
+            </div>
+          </div>
+
+          {/* Étape : Nom */}
+          {currentStep === 1 && (
+            <div>
               <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="name">
-                Nom
+                Nom du modèle
               </label>
               <input
                 id="name"
@@ -104,9 +132,11 @@ export default function CreateModel() {
                 required
               />
             </div>
+          )}
 
-            {/* Réseaux sociaux */}
-            <div className="mb-4">
+          {/* Étape : Réseaux sociaux */}
+          {currentStep === 2 && (
+            <div>
               <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="socialMedia">
                 Réseaux sociaux (séparés par des virgules)
               </label>
@@ -114,15 +144,19 @@ export default function CreateModel() {
                 id="socialMedia"
                 type="text"
                 value={socialMedia.join(", ")}
-                onChange={(e) => setSocialMedia(e.target.value.split(",").map(link => link.trim()))}
+                onChange={(e) =>
+                  setSocialMedia(e.target.value.split(",").map((link) => link.trim()))
+                }
                 className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
               />
             </div>
+          )}
 
-            {/* Description */}
-            <div className="mb-4">
+          {/* Étape : Description */}
+          {currentStep === 3 && (
+            <div>
               <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="description">
-                Description
+                Description du modèle
               </label>
               <textarea
                 id="description"
@@ -131,33 +165,36 @@ export default function CreateModel() {
                 className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
               ></textarea>
             </div>
+          )}
 
-            {/* Photo */}
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="photo">
-                Photo
-              </label>
-              <input
-                id="photo"
-                type="file"
-                onChange={(e) => setPhoto(e.target.files?.[0] || null)}
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:border file:border-gray-300 file:rounded-md file:text-sm file:bg-white file:text-gray-700 hover:file:bg-gray-100"
-              />
-            </div>
-
-            {/* Bouton Soumettre */}
-            <div className="flex items-center justify-between">
+          {/* Boutons de navigation */}
+          <div className="flex justify-between mt-6">
+            {currentStep > 1 && (
               <button
-                type="submit"
+                onClick={previousStep}
+                className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+              >
+                Précédent
+              </button>
+            )}
+            {currentStep < 3 ? (
+              <button
+                onClick={nextStep}
                 className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
               >
-                Créer le Modèle
+                Suivant
               </button>
-            </div>
-          </form>
+            ) : (
+              <button
+                onClick={handleSubmit}
+                className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+              >
+                Soumettre
+              </button>
+            )}
+          </div>
         </div>
       </main>
     </DashboardLayout>
   );
-};
-
+}

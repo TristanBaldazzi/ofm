@@ -20,7 +20,15 @@ export default function CompanyDetails() {
     customActivity?: string;
   }
 
+  interface Model {
+    _id: string;
+    name: string;
+    description: string;
+    socialMedia: { platform: string; link: string }[];
+  }
+
   const [company, setCompany] = useState<Company | null>(null);
+  const [models, setModels] = useState<Model[]>([]); 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isEditing, setIsEditing] = useState(false);
@@ -76,6 +84,24 @@ export default function CompanyDetails() {
       }
     };
     fetchCompanyDetails();
+  }, [id]);
+
+  useEffect(() => {
+    const fetchModels = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get(
+          `http://localhost:5001/api/fan/${id}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setModels(response.data);
+      } catch (err) {
+        console.error(err);
+        setError("Erreur lors de la récupération des modèles.");
+      }
+    };
+
+    fetchModels();
   }, [id]);
 
   useEffect(() => {
@@ -168,7 +194,7 @@ export default function CompanyDetails() {
       <main className="flex-grow bg-gray-100 flex flex-col items-center justify-start p-6 min-h-screen">
         {/* Menu flottant avec animation */}
         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-white shadow-lg rounded-full p-2 flex space-x-4 z-50 transition-all duration-300 ease-in-out hover:shadow-xl">
-          {["details", "invitation", "members", "forms"].map((tab) => (
+          {["details", "models", "invitation", "members", "forms"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -178,6 +204,7 @@ export default function CompanyDetails() {
                 }`}
             >
               {tab === "details" && "Détails"}
+              {tab === "models" && "Modèles"}
               {tab === "invitation" && "Invitations"}
               {tab === "members" && "Employés"}
               {tab === "forms" && "Formulaires"}
@@ -350,6 +377,33 @@ export default function CompanyDetails() {
                       Sauvegarder
                     </button>
                   </div>
+                )}
+              </>
+            )}
+
+            {/* Onglet Modèles */}
+            {activeTab === "models" && (
+              <>
+                <h2 className="text-xl font-bold mb-4">Liste des Modèles</h2>
+                {models.length > 0 ? (
+                  models.map((model) => (
+                    <div key={model._id} className="bg-gray-100 shadow-md rounded-lg p-4 mb-4">
+                      <h3 className="text-lg font-semibold">{model.name}</h3>
+                      <p>{model.description}</p>
+                      <ul className="mt-2 space-y-1">
+                        {model.socialMedia.map((social, index) => (
+                          <li key={index} className="text-blue-600 underline">
+                            {social.platform}:{" "}
+                            <a href={social.link} target="_blank" rel="noopener noreferrer">
+                              {social.link}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))
+                ) : (
+                  <p>Aucun modèle trouvé.</p>
                 )}
               </>
             )}

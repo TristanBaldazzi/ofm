@@ -1,0 +1,11 @@
+# Node modules
+node_modules/
+
+# Cache next
+.next/
+
+# DS Store
+.DS_Store
+
+# Uploads Server
+uploads/

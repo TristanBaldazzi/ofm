@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation de l'API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .route {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .route h3 {
+            margin-top: 0;
+        }
+        .method {
+            font-weight: bold;
+            color: #007BFF;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Documentation de l'API</h1>
+
+    <h2>Routes Admin</h2>
+
+    <div class="route">
+        <h3><span class="method">GET</span> /admin/users</h3>
+        <p>Récupère la liste de tous les utilisateurs (sans leurs mots de passe).</p>
+        <h4>Headers requis :</h4>
+        <pre>Authorization: Bearer {token_admin}</pre>
+        <h4>Réponse :</h4>
+        <pre>
+[
+  {
+    "_id": "123",
+    "email": "user@example.com",
+    "role": "User",
+    "isVerified": true
+  },
+  ...
+]
+        </pre>
+    </div>
+
+    <div class="route">
+        <h3><span class="method">PUT</span> /admin/users/:id/role</h3>
+        <p>Modifie le rôle d'un utilisateur.</p>
+        <h4>Headers requis :</h4>
+        <pre>Authorization: Bearer {token_admin}</pre>
+        <h4>Body :</h4>
+        <pre>
+{
+  "role": "Admin" // ou "User"
+}
+        </pre>
+        <h4>Réponse :</h4>
+        <pre>
+{
+  "message": "Rôle mis à jour avec succès.",
+  "user": {
+    "_id": "123",
+    "email": "user@example.com",
+    "role": "Admin"
+  }
+}
+        </pre>
+    </div>
+
+    <div class="route">
+        <h3><span class="method">DELETE</span> /admin/users/:id</h3>
+        <p>Supprime un utilisateur par son ID.</p>
+        <h4>Headers requis :</h4>
+        <pre>Authorization: Bearer {token_admin}</pre>
+        <h4>Réponse :</h4>
+        <pre>
+{
+  "message": "Utilisateur supprimé avec succès."
+}
+        </pre>
+    </div>
+
+    <div class="route">
+        <h3><span class="method">POST</span> /admin/users</h3>
+        <p>Crée un nouvel utilisateur et envoie un email de vérification.</p>
+        <h4>Headers requis :</h4>
+        <pre>Authorization: Bearer {token_admin}</pre>
+        <h4>Body :</h4>
+        <pre>
+{
+  "email": "newuser@example.com",
+  "password": "password123",
+  "role": "User" // ou "Admin"
+}
+        </pre>
+        <h4>Réponse :</h4>
+        <pre>
+{
+  "message": "Utilisateur créé et email envoyé.",
+  "user": {
+    "_id": "123",
+    "email": "newuser@example.com",
+    "role": "User"
+  }
+}
+        </pre>
+    </div>
+
+    <h2>Routes Utilisateur</h2>
+
+    <div class="route">
+        <h3><span class="method">POST</span> /user/signup</h3>
+        <p>Inscrit un nouvel utilisateur et envoie un email de vérification.</p>
+        <h4>Body :</h4>
+        <pre>
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+        </pre>
+        <h4>Réponse :</h4>
+        <pre>
+{
+  "message": "Utilisateur créé. Vérifiez votre email pour le code."
+}
+        </pre>
+    </div>
+
+    <div class="route">
+        <h3><span class="method">POST</span> /user/verify-email</h3>
+        <p>Vérifie l'adresse email d'un utilisateur avec un code reçu par email.</p>
+        <h4>Headers requis :</h4>
+        <pre>Authorization: Bearer {token}</pre>
+        <h4>Body :</h4>
+        <pre>
+{
+  "verificationCode": "123456"
+}
+        </pre>
+        <h4>Réponse :</h4>
+        <pre>
+{
+  "message": "Email vérifié avec succès."
+}
+        </pre>
+    </div>
+
+    <div class="route">
+        <h3><span class="method">POST</span> /user/login</h3>
+        <p>Connecte un utilisateur et retourne un token JWT.</p>
+        <h4>Body :</h4>
+        <pre>
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+        </pre>
+        <h4>Réponse :</h4>
+        <pre>
+{
+  "token": "jwt_token"
+}
+        </pre>
+    </div>
+
+    <div class="route">
+        <h3><span class="method">GET</span> /user/me</h3>
+        <p>Retourne les informations de l'utilisateur connecté.</p>
+        <h4>Headers requis :</h4>
+        <pre>Authorization: Bearer {token}</pre>
+        <h4>Réponse :</h4>
+        <pre>
+{
+  "_id": "123",
+  "email": "user@example.com",
+  "role": "User",
+  "isVerified": true
+}
+        </pre>
+    </div>
+
+    <div class="route">
+        <h3><span class="method">GET</span> /user/protected</h3>
+        <p>Exemple de route protégée accessible uniquement aux administrateurs.</p>
+        <h4>Headers requis :</h4>
+        <pre>Authorization: Bearer {token}</pre>
+        <h4>Réponse :</h4>
+        <pre>
+{
+  "message": "Bienvenue Admin ID : 123"
+}
+        </pre>
+    </div>
+</body>
+</html>

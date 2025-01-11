@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { useParams, useRouter } from "next/navigation";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -20,6 +20,7 @@ export default function ModelDetails() {
   const [newTaskSocialPlatform, setNewTaskSocialPlatform] = useState("");
   const [newTaskDate, setNewTaskDate] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Fetch model details and tasks
   useEffect(() => {
@@ -95,6 +96,11 @@ export default function ModelDetails() {
       setNewTaskSocialPlatform("");
       setNewTaskContent("");
       setNewTaskDate("");
+      setFile(null);
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""; // Réinitialisez le champ fichier
+      }
 
     } catch (err) {
       console.error(err);
@@ -227,7 +233,12 @@ export default function ModelDetails() {
             <input
               type="file"
               accept="image/*,video/*"
-              onChange={(e) => setFile(e.target.files[0])}
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  setFile(e.target.files[0]); // Met à jour l'état avec le fichier sélectionné
+                }
+              }}
+              ref={fileInputRef} // Ajoutez la référence ici
               className="w-full p-3 border border-gray-300 rounded-lg shadow-sm"
             />
             <select

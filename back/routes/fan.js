@@ -1,11 +1,24 @@
 const express = require('express');
+const multer = require('multer');
 const router = express.Router();
 const OnlyFan = require('../models/OnlyFan');
 const isAuth = require('../middleware/authMiddleware');
 const checkAccessCompany = require('../middleware/checkAccessCompany');
 
+// Configuration Multer pour stocker les images dans /uploads/model
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/model');
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
+});
+
+const upload = multer({ storage });
+
 // Créer un OnlyFan
-router.post('/create', isAuth, checkAccessCompany, async (req, res) => {
+router.post('/create', isAuth, checkAccessCompany, upload.single('profilePicture'), async (req, res) => {
   const { name, description, companyId, socialMedia } = req.body;
   console.log
   try {
@@ -20,12 +33,14 @@ router.post('/create', isAuth, checkAccessCompany, async (req, res) => {
           "Seuls TikTok, X, Threads et Bluesky sont acceptés comme plateformes.",
       });
     }
+    const profilePicturePath = req.file ? `/uploads/model/${req.file.filename}` : undefined;
 
     const newModel = new OnlyFan({
       name,
       description,
       companyId,
       socialMedia,
+      profilePicture: profilePicturePath || '/uploads/model/default-profile.png',
     });
 
     const savedModel = await newModel.save();
@@ -45,15 +60,28 @@ router.get('/:companyId', isAuth, checkAccessCompany, async (req, res) => {
   }
 });
 
-// Récupérer un seul OnlyFan
-router.get('/:id/:companyId', isAuth, checkAccessCompany, async (req, res) => {
-  try {
-    const onlyFan = await OnlyFan.findById(req.params.id).populate('companyId');
-    if (!onlyFan) return res.status(404).json({ message: 'OnlyFan non trouvé' });
+// // Récupérer un seul OnlyFan
+// router.get('/:id/:companyId', isAuth, checkAccessCompany, async (req, res) => {
+//   try {
+//     const onlyFan = await OnlyFan.findById(req.params.id).populate('companyId');
+//     if (!onlyFan) return res.status(404).json({ message: 'OnlyFan non trouvé' });
 
-    res.status(200).json(onlyFan);
+//     res.status(200).json(onlyFan);
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// });
+
+router.get("/model/:id", isAuth , async (req, res) => {
+  try {
+    const model = await OnlyFan.findById(req.params.id);
+    if (!model) {
+      return res.status(404).json({ error: "Modèle non trouvé." });
+    }
+    res.status(200).json(model);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: "Erreur lors de la récupération du modèle." });
   }
 });
 

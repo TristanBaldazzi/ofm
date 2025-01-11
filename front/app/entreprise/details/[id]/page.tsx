@@ -25,6 +25,7 @@ export default function CompanyDetails() {
     name: string;
     description: string;
     socialMedia: { platform: string; link: string }[];
+    profilePicture: string;
   }
 
   const [company, setCompany] = useState<Company | null>(null);
@@ -398,63 +399,78 @@ export default function CompanyDetails() {
             )}
 
             {activeTab === "models" && (
-              <>
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold text-gray-800">Liste des Modèles</h2>
-                  <button
-                    onClick={() => router.push(`/entreprise/model/create/${id}`)}
-                    className="px-6 py-3 bg-green-500 text-white rounded-lg shadow-md hover:bg-green-600 transition duration-300"
-                  >
-                    Créer un modèle
-                  </button>
-                </div>
-                {models.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {models.map((model) => (
-                      <div
-                        key={model._id}
-                        className="bg-white shadow-lg rounded-lg p-6 hover:shadow-xl transition duration-300"
-                      >
-                        {/* Titre du modèle */}
-                        <h3 className="text-lg font-semibold text-gray-800">{model.name}</h3>
+  <>
+    <div className="flex justify-between items-center mb-6">
+      <h2 className="text-2xl font-bold text-gray-800">Liste des Modèles</h2>
+      <button
+        onClick={() => router.push(`/entreprise/model/create/${id}`)}
+        className="px-6 py-3 bg-green-500 text-white rounded-lg shadow-md hover:bg-green-600 transition duration-300"
+      >
+        Créer un modèle
+      </button>
+    </div>
+    {models.length > 0 ? (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {models.map((model) => (
+          <div
+            key={model._id}
+            className="bg-white shadow-lg rounded-lg p-6 hover:shadow-xl transition duration-300 relative"
+          >
+            {/* Photo de profil */}
+            <img
+              src={`http://localhost:5001${model.profilePicture}`}
+              alt={model.name}
+              className="w-16 h-16 rounded-full absolute top-4 right-4 border border-gray-300"
+            />
 
-                        {/* Description */}
-                        <p className="text-gray-600 mt-2">
-                          {model.description || "Aucune description disponible."}
-                        </p>
+            {/* Titre du modèle */}
+            <h3 className="text-lg font-semibold text-gray-800">{model.name}</h3>
 
-                        {/* Réseaux sociaux */}
-                        {model.socialMedia.length > 0 && (
-                          <div className="flex items-center space-x-4 mt-4">
-                            {model.socialMedia.map((social, index) => {
-                              const socialIcon = getSocialIcon(social.platform); // Fonction pour obtenir l'icône basée sur la plateforme
-                              return (
-                                <a
-                                  key={index}
-                                  href={social.link}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="hover:opacity-80 transition"
-                                >
-                                  <img
-                                    src={socialIcon}
-                                    alt={social.platform}
-                                    className="w-8 h-8"
-                                    title={social.platform}
-                                  />
-                                </a>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-600">Aucun modèle trouvé.</p>
-                )}
-              </>
+            {/* Description */}
+            <p className="text-gray-600 mt-2">
+              {model.description || "Aucune description disponible."}
+            </p>
+
+            {/* Réseaux sociaux */}
+            {model.socialMedia.length > 0 && (
+              <div className="flex items-center space-x-4 mt-4">
+                {model.socialMedia.map((social, index) => {
+                  const socialIcon = getSocialIcon(social.platform); // Fonction pour obtenir l'icône basée sur la plateforme
+                  return (
+                    <a
+                      key={index}
+                      href={social.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:opacity-80 transition"
+                    >
+                      <img
+                        src={socialIcon}
+                        alt={social.platform}
+                        className="w-8 h-8"
+                        title={social.platform}
+                      />
+                    </a>
+                  );
+                })}
+              </div>
             )}
+
+            {/* Voir plus button */}
+            <button
+              onClick={() => router.push(`/entreprise/model/details/${model._id}`)}
+              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition"
+            >
+              Voir plus
+            </button>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <p className="text-gray-600">Aucun modèle trouvé.</p>
+    )}
+  </>
+)}
 
 
             {activeTab === "invitation" && (

@@ -13,7 +13,7 @@ const socialMediaSchema = new mongoose.Schema({
     required: true,
     validate: {
       validator: function (v) {
-        return /^https?:\/\/.+$/.test(v); // Vérifie que le lien est une URL valide
+        return /^https?:\/\/.+$/.test(v);
       },
       message: (props) => `${props.value} n'est pas une URL valide.`,
     },
@@ -24,7 +24,8 @@ const onlyFanSchema = new mongoose.Schema({
   name: { type: String, required: true },
   description: { type: String },
   companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true },
-  socialMedia: [socialMediaSchema], // Tableau des réseaux sociaux avec validation
+  socialMedia: [socialMediaSchema],
+  profilePicture: { type: String, default: '/uploads/default-profile.png' },
   createdAt: { type: Date, default: Date.now },
 });
 

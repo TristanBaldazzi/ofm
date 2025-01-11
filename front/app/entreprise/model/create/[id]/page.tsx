@@ -18,6 +18,7 @@ export default function CreateModel() {
   const [name, setName] = useState("");
   const [socialMedia, setSocialMedia] = useState<{ platform: string; link: string }[]>([]);
   const [description, setDescription] = useState("");
+  const [profilePicture, setProfilePicture] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const router = useRouter();
@@ -55,6 +56,7 @@ export default function CreateModel() {
           description,
           companyId: id,
           socialMedia,
+          profilePicture,
         },
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -237,6 +239,7 @@ export default function CreateModel() {
               ></textarea>
             </div>
           )}
+
 
           {/* Boutons de navigation */}
           <div className="flex justify-between mt-6">

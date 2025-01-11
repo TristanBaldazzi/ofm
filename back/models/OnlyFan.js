@@ -1,19 +1,31 @@
 const mongoose = require('mongoose');
 
+const allowedPlatforms = ['TikTok', 'X', 'Threads', 'Bluesky'];
+
+const socialMediaSchema = new mongoose.Schema({
+  platform: {
+    type: String,
+    enum: allowedPlatforms, // Limite les plateformes autorisées
+    required: true,
+  },
+  link: {
+    type: String,
+    required: true,
+    validate: {
+      validator: function (v) {
+        return /^https?:\/\/.+$/.test(v); // Vérifie que le lien est une URL valide
+      },
+      message: (props) => `${props.value} n'est pas une URL valide.`,
+    },
+  },
+});
+
 const onlyFanSchema = new mongoose.Schema({
-  name: { type: String, required: true }, // Nom de l'OnlyFan
-  socialMedia: { type: [String], default: [] }, // Réseaux sociaux (facultatif)
-  description: { type: String }, // Description (facultatif)
-  photo: { 
-    type: String, 
-    default: 'default-photo.jpg' // Photo par défaut si aucune n'est fournie
-  },
-  companyId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Company', 
-    required: true // Lien obligatoire avec une entreprise
-  },
-  createdAt: { type: Date, default: Date.now } // Date de création
+  name: { type: String, required: true },
+  description: { type: String },
+  companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true },
+  socialMedia: [socialMediaSchema], // Tableau des réseaux sociaux avec validation
+  createdAt: { type: Date, default: Date.now },
 });
 
 module.exports = mongoose.model('OnlyFan', onlyFanSchema);

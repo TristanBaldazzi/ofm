@@ -6,12 +6,32 @@ const checkAccessCompany = require('../middleware/checkAccessCompany');
 
 // Créer un OnlyFan
 router.post('/create', isAuth, checkAccessCompany, async (req, res) => {
+  const { name, description, companyId, socialMedia } = req.body;
+  console.log
   try {
-    const onlyFan = new OnlyFan(req.body);
-    const savedOnlyFan = await onlyFan.save();
-    res.status(201).json(savedOnlyFan);
+    const allowedPlatforms = ['TikTok', 'X', 'Threads', 'Bluesky'];
+    if (
+      socialMedia.some(
+        (media) => !allowedPlatforms.includes(media.platform)
+      )
+    ) {
+      return res.status(400).json({
+        message:
+          "Seuls TikTok, X, Threads et Bluesky sont acceptés comme plateformes.",
+      });
+    }
+
+    const newModel = new OnlyFan({
+      name,
+      description,
+      companyId,
+      socialMedia,
+    });
+
+    const savedModel = await newModel.save();
+    res.status(201).json(savedModel);
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    res.status(500).json({ error: err.message });
   }
 });
 

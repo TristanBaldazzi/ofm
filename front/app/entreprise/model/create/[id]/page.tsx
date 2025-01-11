@@ -16,7 +16,7 @@ export default function CreateModel() {
   const [user, setUser] = useState<User | null>(null);
   const [currentStep, setCurrentStep] = useState(1); // Étape actuelle
   const [name, setName] = useState("");
-  const [socialMedia, setSocialMedia] = useState<string[]>([]);
+  const [socialMedia, setSocialMedia] = useState<{ platform: string; link: string }[]>([]);
   const [description, setDescription] = useState("");
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -61,7 +61,7 @@ export default function CreateModel() {
         }
       );
       setSuccessMessage("Modèle créé avec succès !");
-      router.push(`/dashboard`); // Rediriger après création
+      router.push(`/entreprise/details/${id}`); // Rediriger après création
     } catch (err) {
       console.error(err);
       setError("Erreur lors de la création du modèle.");
@@ -71,8 +71,11 @@ export default function CreateModel() {
   // Gestion des étapes
   const nextStep = () => {
     if (currentStep === 1 && !name) return setError("Le nom est requis.");
+    if (currentStep === 2 && socialMedia.some((media) => !validateURL(media.link))) {
+      return setError("Un ou plusieurs liens entrés ne sont pas valides.");
+    }
     if (currentStep === 2 && socialMedia.length === 0)
-      return setError("Au moins un réseau social est requis.");
+      return setError("Ajoutez au moins un réseau social.");
     setError(""); // Réinitialiser les erreurs
     setCurrentStep((prev) => prev + 1);
   };
@@ -80,6 +83,29 @@ export default function CreateModel() {
   const previousStep = () => {
     setError(""); // Réinitialiser les erreurs
     setCurrentStep((prev) => prev - 1);
+  };
+
+  // Ajouter un réseau social
+  const addSocialMediaField = () => {
+    setSocialMedia([...socialMedia, { platform: "", link: "" }]);
+  };
+
+  // Supprimer un réseau social
+  const removeSocialMediaField = (index: number) => {
+    setSocialMedia(socialMedia.filter((_, i) => i !== index));
+  };
+
+  // Mettre à jour un réseau social
+  const updateSocialMediaField = (index: number, key: "platform" | "link", value: string) => {
+    const updatedSocialMedia = [...socialMedia];
+    updatedSocialMedia[index][key] = value;
+    setSocialMedia(updatedSocialMedia);
+  };
+
+  // Validation des URL
+  const validateURL = (url: string): boolean => {
+    const regex = /^(https?:\/\/)?([\w-]+(\.[\w-]+)+)([\/\w-]*)*$/;
+    return regex.test(url);
   };
 
   if (!user) return <LoadingSpinner />;
@@ -137,18 +163,63 @@ export default function CreateModel() {
           {/* Étape : Réseaux sociaux */}
           {currentStep === 2 && (
             <div>
-              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="socialMedia">
-                Réseaux sociaux (séparés par des virgules)
-              </label>
-              <input
-                id="socialMedia"
-                type="text"
-                value={socialMedia.join(", ")}
-                onChange={(e) =>
-                  setSocialMedia(e.target.value.split(",").map((link) => link.trim()))
-                }
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              />
+              <label className="block text-gray-700 text-sm font-bold mb-2">Réseaux sociaux</label>
+              {socialMedia.map((media, index) => (
+                <div key={index} className="flex items-center space-x-4 mb-2">
+                  {/* Sélection de la plateforme */}
+                  <select
+                    value={media.platform}
+                    onChange={(e) =>
+                      updateSocialMediaField(index, "platform", e.target.value)
+                    }
+                    className="block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none bg-white"
+                    style={{
+                      backgroundImage:
+                        "url('data:image/svg+xml;utf8,<svg fill=\"%23999\" height=\"20\" viewBox=\"0 0 24 24\" width=\"20\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M7 10l5 5 5-5z\"/></svg>')",
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPositionX: 'calc(100% -12px)',
+                      backgroundPositionY: 'center',
+                    }}
+                    required
+                  >
+                    <option value="">Sélectionnez une plateforme</option>
+                    <option value="TikTok">TikTok</option>
+                    <option value="X">X</option>
+                    <option value="Threads">Threads</option>
+                    <option value="Bluesky">Bluesky</option>
+                  </select>
+
+                  {/* Lien */}
+                  <input
+                    type="url"
+                    placeholder="Lien"
+                    value={media.link}
+                    onChange={(e) =>
+                      updateSocialMediaField(index, "link", e.target.value)
+                    }
+                    className={`w-full border ${validateURL(media.link) ? "border-gray-300" : "border-red-500"
+                      } rounded-md p-2`}
+                    required
+                  />
+
+                  {/* Supprimer */}
+                  <button
+                    type="button"
+                    onClick={() => removeSocialMediaField(index)}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    Supprimer
+                  </button>
+                </div>
+              ))}
+              {/* Ajouter un réseau social */}
+              <button
+                type="button"
+                onClick={addSocialMediaField}
+                className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+              >
+                Ajouter un réseau social
+              </button>
             </div>
           )}
 

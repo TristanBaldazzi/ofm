@@ -28,7 +28,7 @@ export default function CompanyDetails() {
   }
 
   const [company, setCompany] = useState<Company | null>(null);
-  const [models, setModels] = useState<Model[]>([]); 
+  const [models, setModels] = useState<Model[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isEditing, setIsEditing] = useState(false);
@@ -185,6 +185,22 @@ export default function CompanyDetails() {
   const handleViewDetails = (formId) => {
     router.push(`/entreprise/form/details/${formId}`);
   };
+
+  const getSocialIcon = (platform: string): string => {
+    switch (platform) {
+      case "TikTok":
+        return "/icons/tiktok.svg";
+      case "X":
+        return "/icons/x.svg";
+      case "Threads":
+        return "/icons/threads.svg";
+      case "Bluesky":
+        return "/icons/bluesky.svg";
+      default:
+        return "/icons/alert.svg";
+    }
+  };
+
 
   if (loading) return <LoadingSpinner />;
   if (error) return <p className="text-red-500">{error}</p>;
@@ -381,40 +397,65 @@ export default function CompanyDetails() {
               </>
             )}
 
-            {/* Onglet Modèles */}
             {activeTab === "models" && (
               <>
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-bold">Liste des Modèles</h2>
+                  <h2 className="text-2xl font-bold text-gray-800">Liste des Modèles</h2>
                   <button
                     onClick={() => router.push(`/entreprise/model/create/${id}`)}
-                    className="px-4 py-2 bg-green-500 text-white rounded-lg shadow-md hover:bg-green-600 transition duration-300"
+                    className="px-6 py-3 bg-green-500 text-white rounded-lg shadow-md hover:bg-green-600 transition duration-300"
                   >
                     Créer un modèle
                   </button>
                 </div>
                 {models.length > 0 ? (
-                  models.map((model) => (
-                    <div key={model._id} className="bg-gray-100 shadow-md rounded-lg p-4 mb-4">
-                      <h3 className="text-lg font-semibold">{model.name}</h3>
-                      <p>{model.description}</p>
-                      <ul className="mt-2 space-y-1">
-                        {model.socialMedia.map((social, index) => (
-                          <li key={index} className="text-blue-600 underline">
-                            {social.platform}:{" "}
-                            <a href={social.link} target="_blank" rel="noopener noreferrer">
-                              {social.link}
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {models.map((model) => (
+                      <div
+                        key={model._id}
+                        className="bg-white shadow-lg rounded-lg p-6 hover:shadow-xl transition duration-300"
+                      >
+                        {/* Titre du modèle */}
+                        <h3 className="text-lg font-semibold text-gray-800">{model.name}</h3>
+
+                        {/* Description */}
+                        <p className="text-gray-600 mt-2">
+                          {model.description || "Aucune description disponible."}
+                        </p>
+
+                        {/* Réseaux sociaux */}
+                        {model.socialMedia.length > 0 && (
+                          <div className="flex items-center space-x-4 mt-4">
+                            {model.socialMedia.map((social, index) => {
+                              const socialIcon = getSocialIcon(social.platform); // Fonction pour obtenir l'icône basée sur la plateforme
+                              return (
+                                <a
+                                  key={index}
+                                  href={social.link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="hover:opacity-80 transition"
+                                >
+                                  <img
+                                    src={socialIcon}
+                                    alt={social.platform}
+                                    className="w-8 h-8"
+                                    title={social.platform}
+                                  />
+                                </a>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 ) : (
-                  <p>Aucun modèle trouvé.</p>
+                  <p className="text-gray-600">Aucun modèle trouvé.</p>
                 )}
               </>
             )}
+
 
             {activeTab === "invitation" && (
               <>

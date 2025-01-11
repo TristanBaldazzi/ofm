@@ -35,31 +35,31 @@ export default function ModelDetails() {
       setFile(e.target.files[0]);
     }
   };
-  
+
   const handleImportTasks = async () => {
     if (!file) {
-        setError("Veuillez sélectionner un fichier.");
-        return;
+      setError("Veuillez sélectionner un fichier.");
+      return;
     }
 
     try {
-        const token = localStorage.getItem("token");
-        const formData = new FormData();
-        formData.append("file", file);
+      const token = localStorage.getItem("token");
+      const formData = new FormData();
+      formData.append("file", file);
 
-        const response = await axios.post(
-            `http://localhost:5001/api/fan/${companyId}/model/${modelId}/tasks/import`,
-            formData,
-            { headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" } }
-        );
+      const response = await axios.post(
+        `http://localhost:5001/api/fan/${companyId}/model/${modelId}/tasks/import`,
+        formData,
+        { headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" } }
+      );
 
-        setSuccessMessage(response.data.message);
-        setError("");
+      setSuccessMessage(response.data.message);
+      setError("");
     } catch (err) {
-        console.error(err);
-        setError("Erreur lors de l'importation des tâches.");
+      console.error(err);
+      setError("Erreur lors de l'importation des tâches.");
     }
-};
+  };
 
 
   const handleViewTask = (task: any) => {
@@ -274,15 +274,47 @@ export default function ModelDetails() {
           <p>Aucun détail disponible pour ce modèle.</p>
         )}
 
-<input type="file" accept=".xlsx" onChange={handleFileChange} />
+        <div className="bg-white shadow-xl rounded-lg p-8 max-w-4xl w-full mt-6">
+          {/* Titre */}
+          <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Importer des tâches</h2>
+
+          {/* Conteneur principal */}
+          <div className="flex flex-col items-center space-y-6">
+
+            {/* Input pour le fichier */}
+            <div className="w-full">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Sélectionnez un fichier Excel (.xlsx)
+              </label>
+              <input
+                type="file"
+                accept=".xlsx"
+                onChange={handleFileChange}
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-5 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 focus:outline-none focus:ring focus:ring-blue-300"
+              />
+            </div>
+
+            {/* Bouton d'importation */}
             <button
-                onClick={handleImportTasks}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300"
+              onClick={handleImportTasks}
+              className="w-full md:w-auto px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-medium rounded-lg shadow-lg hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring focus:ring-indigo-300 transition duration-300"
             >
-                Importer des tâches
+              Importer des tâches
             </button>
-            {error && <p className="text-red-500 mt-2">{error}</p>}
-            {successMessage && <p className="text-green-500 mt-2">{successMessage}</p>}
+
+            {/* Messages de statut */}
+            {error && (
+              <p className="w-full text-center text-red-500 bg-red-100 border border-red-300 rounded-lg py-2 px-4 text-sm">
+                {error}
+              </p>
+            )}
+            {successMessage && (
+              <p className="w-full text-center text-green-500 bg-green-100 border border-green-300 rounded-lg py-2 px-4 text-sm">
+                {successMessage}
+              </p>
+            )}
+          </div>
+        </div>
 
         {/* Tasks Section */}
         <div className="bg-white shadow-lg rounded-lg p-8 max-w-4xl w-full mt-6">
@@ -310,18 +342,30 @@ export default function ModelDetails() {
               value={newTaskDescription}
               onChange={(e) => setNewTaskDescription(e.target.value)}
               className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring focus:ring-blue-300"
-            />
-            <input
-              type="file"
-              accept="image/*,video/*"
-              onChange={(e) => {
-                if (e.target.files && e.target.files[0]) {
-                  setFile(e.target.files[0]); // Met à jour l'état avec le fichier sélectionné
-                }
-              }}
-              ref={fileInputRef} // Ajoutez la référence ici
-              className="w-full p-3 border border-gray-300 rounded-lg shadow-sm"
-            />
+            /><div className="flex flex-col items-center space-y-4">
+              {/* Input pour le fichier */}
+              <div className="w-full p-4 border border-gray-300 rounded-lg shadow-sm hover:border-blue-500 focus-within:border-blue-500 transition">
+                <label
+                  htmlFor="mediaInput"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Sélectionnez une image ou une vidéo
+                </label>
+                <input
+                  type="file"
+                  accept="image/*,video/*"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      setFile(e.target.files[0]); // Met à jour l'état avec le fichier sélectionné
+                    }
+                  }}
+                  ref={fileInputRef} // Ajoutez la référence ici
+                  id="mediaInput"
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-5 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 focus:outline-none"
+                />
+              </div>
+            </div>
+
             <select
               value={newTaskSocialPlatform}
               onChange={(e) => setNewTaskSocialPlatform(e.target.value)}
@@ -364,8 +408,8 @@ export default function ModelDetails() {
                   key={platform}
                   onClick={() => handlePlatformToggle(platform)}
                   className={`flex items-center space-x-2 px-4 py-2 rounded-lg border ${selectedPlatforms.includes(platform)
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-100 text-gray-800"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-100 text-gray-800"
                     }`}
                 >
                   <img

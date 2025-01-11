@@ -12,6 +12,7 @@ const taskSchema = new mongoose.Schema({
     enum: ['TikTok', 'X', 'Threads', 'Bluesky'] // Restrict to these platforms 
   },
   date: { type: Date, required: true },
+  filePath: { type: String },
   // past: { type: Boolean, default: false},
   createdAt: { type: Date, default: Date.now },
 });

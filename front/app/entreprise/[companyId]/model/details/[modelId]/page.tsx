@@ -19,6 +19,7 @@ export default function ModelDetails() {
   const [newTaskContent, setNewTaskContent] = useState("");
   const [newTaskSocialPlatform, setNewTaskSocialPlatform] = useState("");
   const [newTaskDate, setNewTaskDate] = useState("");
+  const [file, setFile] = useState<File | null>(null);
 
   // Fetch model details and tasks
   useEffect(() => {
@@ -60,28 +61,41 @@ export default function ModelDetails() {
     }
   };
 
-  // Handle adding a new task
-  const handleAddTask = async (e: React.FormEvent) => {
+  const handleAddTask = async (e) => {
     e.preventDefault();
+
     try {
       const token = localStorage.getItem("token");
+
+      const formData = new FormData();
+      formData.append("title", newTaskTitle);
+      formData.append("description", newTaskDescription);
+      formData.append("socialPlatform", newTaskSocialPlatform);
+      formData.append("content", newTaskContent);
+      formData.append("date", newTaskDate);
+
+      if (file) formData.append("file", file); // Ajoutez le fichier s'il existe
+
       const response = await axios.post(
         `http://localhost:5001/api/fan/${companyId}/model/${modelId}/task`,
+        formData,
         {
-          title: newTaskTitle,
-          description: newTaskDescription,
-          socialPlatform: newTaskSocialPlatform,
-          content: newTaskContent,
-          date: newTaskDate,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
       );
-      setTasks([response.data.task, ...tasks]); // Add new task to the list
+
+      setTasks([response.data.task, ...tasks]);
+
+      // Réinitialisez les champs après ajout
       setNewTaskTitle("");
       setNewTaskDescription("");
       setNewTaskSocialPlatform("");
       setNewTaskContent("");
       setNewTaskDate("");
+
     } catch (err) {
       console.error(err);
       setError("Erreur lors de l'ajout de la tâche.");
@@ -209,6 +223,12 @@ export default function ModelDetails() {
               value={newTaskDescription}
               onChange={(e) => setNewTaskDescription(e.target.value)}
               className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring focus:ring-blue-300"
+            />
+            <input
+              type="file"
+              accept="image/*,video/*"
+              onChange={(e) => setFile(e.target.files[0])}
+              className="w-full p-3 border border-gray-300 rounded-lg shadow-sm"
             />
             <select
               value={newTaskSocialPlatform}

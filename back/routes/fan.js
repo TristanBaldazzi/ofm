@@ -4,6 +4,7 @@ const router = express.Router();
 const OnlyFan = require('../models/OnlyFan');
 const isAuth = require('../middleware/authMiddleware');
 const checkAccessCompany = require('../middleware/checkAccessCompany');
+const uploadTasks = require('../middleware/uploadTasks');
 
 // Configuration Multer pour stocker les images dans /uploads/model
 const storage = multer.diskStorage({
@@ -98,26 +99,34 @@ router.delete('/:companyId/:id', isAuth, checkAccessCompany, async (req, res) =>
   }
 });
 
-router.post('/:companyId/model/:id/task', isAuth, async (req, res) => {
-  const { title, description, socialPlatform, date, content } = req.body;
+router.post('/:companyId/model/:id/task', isAuth, uploadTasks.single('file'), async (req, res) => {
+    const { title, description, socialPlatform, date, content } = req.body;
 
-  try {
-    const model = await OnlyFan.findOne({ _id: req.params.id, companyId: req.params.companyId });
+    try {
+      const model = await OnlyFan.findOne({ _id: req.params.id, companyId: req.params.companyId });
 
-    if (!model) {
-      return res.status(404).json({ error: 'Modèle non trouvé.' });
+      if (!model) {
+        return res.status(404).json({ error: 'Modèle non trouvé.' });
+      }
+
+      let filePath = null;
+      if (req.file) {
+        filePath = `/uploads/tasks/${req.file.filename}`;
+      }
+
+      const newTask = { title, description, socialPlatform, date, content };
+      if (filePath) newTask.filePath = filePath; // Ajoutez le chemin du fichier si présent
+
+      model.tasks.push(newTask);
+      await model.save();
+
+      res.status(201).json({ message: 'Tâche ajoutée avec succès.', task: newTask });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Erreur lors de l'ajout de la tâche." });
     }
-
-    const newTask = { title, description, socialPlatform, date, content };
-    model.tasks.push(newTask);
-    await model.save();
-
-    res.status(201).json({ message: 'Tâche ajoutée avec succès.', task: newTask });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erreur lors de l'ajout de la tâche." });
   }
-});
+);
 
 router.put('/:companyId/model/:id/task/:taskId', isAuth, async (req, res) => {
   const { title, description, socialPlatform } = req.body;

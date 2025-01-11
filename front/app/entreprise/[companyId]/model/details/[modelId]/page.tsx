@@ -10,11 +10,16 @@ export default function ModelDetails() {
   const { companyId, modelId } = useParams(); // Get companyId and modelId from the URL
   const router = useRouter();
   const [model, setModel] = useState<any | null>(null);
+  const [tasks, setTasks] = useState<any[]>([]); // State for tasks
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false); // State for delete confirmation modal
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskDescription, setNewTaskDescription] = useState("");
+  const [newTaskSocialPlatform, setNewTaskSocialPlatform] = useState("");
+  const [newTaskDate, setNewTaskDate] = useState("");
 
-  // Fetch model details
+  // Fetch model details and tasks
   useEffect(() => {
     const fetchModelDetails = async () => {
       try {
@@ -28,6 +33,7 @@ export default function ModelDetails() {
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setModel(response.data);
+        setTasks(response.data.tasks); // Set tasks from the model data
       } catch (err) {
         console.error(err);
         setError("Erreur lors de la récupération des détails du modèle.");
@@ -46,10 +52,51 @@ export default function ModelDetails() {
       await axios.delete(`http://localhost:5001/api/fan/${companyId}/${modelId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      router.push(`/entreprise/details/${companyId}`); // Redirect to models list after deletion
+      router.push(`/entreprise/details/${companyId}`); // Redirect to company details after deletion
     } catch (err) {
       console.error(err);
       setError("Erreur lors de la suppression du modèle.");
+    }
+  };
+
+  // Handle adding a new task
+  const handleAddTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.post(
+        `http://localhost:5001/api/fan/${companyId}/model/${modelId}/task`,
+        {
+          title: newTaskTitle,
+          description: newTaskDescription,
+          socialPlatform: newTaskSocialPlatform,
+          date: newTaskDate,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setTasks([response.data.task, ...tasks]); // Add new task to the list
+      setNewTaskTitle("");
+      setNewTaskDescription("");
+      setNewTaskSocialPlatform("");
+      setNewTaskDate("");
+    } catch (err) {
+      console.error(err);
+      setError("Erreur lors de l'ajout de la tâche.");
+    }
+  };
+
+  // Handle deleting a task
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(
+        `http://localhost:5001/api/fan/${companyId}/model/${modelId}/task/${taskId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setTasks(tasks.filter((task) => task._id !== taskId)); // Remove task from the list
+    } catch (err) {
+      console.error(err);
+      setError("Erreur lors de la suppression de la tâche.");
     }
   };
 
@@ -58,7 +105,8 @@ export default function ModelDetails() {
 
   return (
     <DashboardLayout>
-      <main className="flex-grow bg-gray-100 flex items-center justify-center p-6">
+      <main className="flex-grow bg-gray-100 flex flex-col items-center justify-start p-6">
+        {/* Model Details */}
         {model ? (
           <div className="bg-white shadow-lg rounded-lg p-8 max-w-xl w-full relative">
             {/* Delete Button */}
@@ -91,25 +139,22 @@ export default function ModelDetails() {
               <>
                 <h2 className="text-lg font-semibold text-gray-800 mt-6">Réseaux sociaux</h2>
                 <div className="flex justify-center space-x-4 mt-4">
-                  {model.socialMedia.map((social, index) => {
-                    const socialIcon = getSocialIcon(social.platform); // Function to get social media icons
-                    return (
-                      <a
-                        key={index}
-                        href={social.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:opacity-80 transition"
-                      >
-                        <img
-                          src={socialIcon}
-                          alt={social.platform}
-                          className="w-10 h-10"
-                          title={social.platform}
-                        />
-                      </a>
-                    );
-                  })}
+                  {model.socialMedia.map((social, index) => (
+                    <a
+                      key={index}
+                      href={social.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:opacity-80 transition"
+                    >
+                      <img
+                        src={`/icons/${social.platform.toLowerCase()}.svg`}
+                        alt={social.platform}
+                        className="w-10 h-10"
+                        title={social.platform}
+                      />
+                    </a>
+                  ))}
                 </div>
               </>
             )}
@@ -117,6 +162,91 @@ export default function ModelDetails() {
         ) : (
           <p>Aucun détail disponible pour ce modèle.</p>
         )}
+
+        {/* Tasks Section */}
+        <div className="bg-white shadow-lg rounded-lg p-8 max-w-xl w-full mt-6">
+          <h2 className="text-xl font-bold mb-4">Tâches</h2>
+
+          {/* Add Task Form */}
+          <form onSubmit={handleAddTask} className="mb-6 flex flex-col space-y-4">
+            <input
+              type="text"
+              placeholder="Titre de la tâche"
+              value={newTaskTitle}
+              onChange={(e) => setNewTaskTitle(e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring focus:ring-blue-300"
+              required
+            />
+            <textarea
+              placeholder="Description"
+              value={newTaskDescription}
+              onChange={(e) => setNewTaskDescription(e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring focus:ring-blue-300"
+            />
+            <select
+              value={newTaskSocialPlatform}
+              onChange={(e) => setNewTaskSocialPlatform(e.target.value)}
+              className="block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-300 bg-white"
+              required
+            >
+              <option value="">Sélectionnez une plateforme</option>
+              <option value="TikTok">TikTok</option>
+              <option value="X">X</option>
+              <option value="Threads">Threads</option>
+              <option value="Bluesky">Bluesky</option>
+            </select>
+            <input
+              type="datetime-local"
+              value={newTaskDate}
+              onChange={(e) => setNewTaskDate(e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring focus:ring-blue-300"
+              required
+            />
+            <button
+              type="submit"
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300"
+            >
+              Ajouter une tâche
+            </button>
+          </form>
+
+          {/* Tasks Table */}
+          <div className="overflow-x-auto">
+            <table className="min-w-full bg-white border border-gray-200">
+              <thead>
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Titre
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Description
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Plateforme Sociale
+                  </th>
+                  <th className="px-6 py-3"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {tasks.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((task) => (
+                  <tr key={task._id}>
+                    <td className="px-6 py-4 whitespace-nowrap">{task.title}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{task.description}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{task.socialPlatform}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <button
+                        onClick={() => handleDeleteTask(task._id)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        Supprimer
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
         {/* Delete Confirmation Modal */}
         {showDeleteModal && (

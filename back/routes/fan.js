@@ -60,28 +60,15 @@ router.get('/:companyId', isAuth, checkAccessCompany, async (req, res) => {
   }
 });
 
-// // Récupérer un seul OnlyFan
-// router.get('/:id/:companyId', isAuth, checkAccessCompany, async (req, res) => {
-//   try {
-//     const onlyFan = await OnlyFan.findById(req.params.id).populate('companyId');
-//     if (!onlyFan) return res.status(404).json({ message: 'OnlyFan non trouvé' });
-
-//     res.status(200).json(onlyFan);
-//   } catch (err) {
-//     res.status(500).json({ error: err.message });
-//   }
-// });
-
-router.get("/model/:id", isAuth , async (req, res) => {
+// Récupérer un seul OnlyFan
+router.get('/:companyId/:id', isAuth, checkAccessCompany, async (req, res) => {
   try {
-    const model = await OnlyFan.findById(req.params.id);
-    if (!model) {
-      return res.status(404).json({ error: "Modèle non trouvé." });
-    }
-    res.status(200).json(model);
+    const onlyFan = await OnlyFan.findById(req.params.id).populate('companyId');
+    if (!onlyFan) return res.status(404).json({ message: 'OnlyFan non trouvé' });
+
+    res.status(200).json(onlyFan);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erreur lors de la récupération du modèle." });
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -89,7 +76,7 @@ router.get("/model/:id", isAuth , async (req, res) => {
 router.put('/:id', isAuth, checkAccessCompany, async (req, res) => {
   try {
     const updatedOnlyFan = await OnlyFan.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    
+
     if (!updatedOnlyFan) return res.status(404).json({ message: 'OnlyFan non trouvé' });
 
     res.status(200).json(updatedOnlyFan);
@@ -99,10 +86,10 @@ router.put('/:id', isAuth, checkAccessCompany, async (req, res) => {
 });
 
 // Supprimer un OnlyFan
-router.delete('/:id', isAuth, checkAccessCompany, async (req, res) => {
+router.delete('/:companyId/:id', isAuth, checkAccessCompany, async (req, res) => {
   try {
     const deletedOnlyFan = await OnlyFan.findByIdAndDelete(req.params.id);
-    
+
     if (!deletedOnlyFan) return res.status(404).json({ message: 'OnlyFan non trouvé' });
 
     res.status(200).json({ message: 'OnlyFan supprimé avec succès' });

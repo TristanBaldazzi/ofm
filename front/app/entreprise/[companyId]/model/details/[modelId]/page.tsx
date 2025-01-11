@@ -7,13 +7,14 @@ import DashboardLayout from "@/components/DashboardLayout";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
 export default function ModelDetails() {
-  const { id } = useParams(); // Get the model ID from the URL
+  const { companyId, modelId } = useParams(); // Get companyId and modelId from the URL
   const router = useRouter();
   const [model, setModel] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false); // State for delete confirmation modal
 
+  // Fetch model details
   useEffect(() => {
     const fetchModelDetails = async () => {
       try {
@@ -22,9 +23,10 @@ export default function ModelDetails() {
           window.location.href = "/login";
           return;
         }
-        const response = await axios.get(`http://localhost:5001/api/fan/model/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await axios.get(
+          `http://localhost:5001/api/fan/${companyId}/${modelId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
         setModel(response.data);
       } catch (err) {
         console.error(err);
@@ -35,15 +37,16 @@ export default function ModelDetails() {
     };
 
     fetchModelDetails();
-  }, [id]);
+  }, [companyId, modelId]);
 
+  // Handle model deletion
   const handleDeleteModel = async () => {
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`http://localhost:5001/api/fan/model/${id}`, {
+      await axios.delete(`http://localhost:5001/api/fan/${companyId}/${modelId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      router.push(`/entreprise/models`); // Redirect to models list after deletion
+      router.push(`/entreprise/details/${companyId}`); // Redirect to models list after deletion
     } catch (err) {
       console.error(err);
       setError("Erreur lors de la suppression du modèle.");
@@ -76,7 +79,7 @@ export default function ModelDetails() {
             </div>
 
             {/* Nom du modèle */}
-            <h1 className="text-xl font-bold text-gray-800 text-center">{model.name}</h1>
+            <h1 className="text-2xl font-bold text-gray-800 text-center">{model.name}</h1>
 
             {/* Description */}
             <p className="text-gray-600 mt-4 text-center">

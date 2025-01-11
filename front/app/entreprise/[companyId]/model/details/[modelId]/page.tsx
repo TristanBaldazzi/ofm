@@ -22,8 +22,11 @@ export default function ModelDetails() {
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
+
   const [selectedTask, setSelectedTask] = useState<any | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const handleViewTask = (task: any) => {
     setSelectedTask(task); // Définir la tâche sélectionnée
@@ -152,6 +155,27 @@ export default function ModelDetails() {
     const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
     return `Dans ${diffInMinutes} minutes`;
   };
+
+  // Gérer la sélection/désélection des filtres
+  const handlePlatformToggle = (platform: string) => {
+    setSelectedPlatforms((prevSelected) =>
+      prevSelected.includes(platform)
+        ? prevSelected.filter((p) => p !== platform) // Retirer si déjà sélectionné
+        : [...prevSelected, platform] // Ajouter si non sélectionné
+    );
+  };
+
+  // Filtrer les tâches en fonction des réseaux sélectionnés
+  const filteredTasks = selectedPlatforms.length > 0
+    ? tasks.filter((task) => selectedPlatforms.includes(task.socialPlatform))
+    : tasks;
+
+  // Trier les tâches par date
+  const sortedTasks = [...filteredTasks].sort((a, b) => {
+    const dateA = new Date(a.date).getTime();
+    const dateB = new Date(b.date).getTime();
+    return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
+  });
 
   if (loading) return <LoadingSpinner />;
   if (error) return <p className="text-red-500">{error}</p>;
@@ -288,6 +312,50 @@ export default function ModelDetails() {
             </button>
           </form>
 
+          <div className="flex justify-between items-center mb-6">
+        {/* Filtres par Réseau Social */}
+        <div className="flex space-x-4">
+          {["TikTok", "X", "Threads", "Bluesky"].map((platform) => (
+            <button
+              key={platform}
+              onClick={() => handlePlatformToggle(platform)}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-lg border ${
+                selectedPlatforms.includes(platform)
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 text-gray-800"
+              }`}
+            >
+              <img
+                src={`/icons/${platform.toLowerCase()}.svg`}
+                alt={platform}
+                className="w-6 h-6"
+              />
+              <span>{platform}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Tri par Date */}
+        <div className="flex items-center space-x-2">
+          <select
+            id="sortOrder"
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value as "asc" | "desc")}
+            className="block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none bg-white"
+              style={{
+                backgroundImage:
+                  "url('data:image/svg+xml;utf8,<svg fill=\"%23999\" height=\"20\" viewBox=\"0 0 24 24\" width=\"20\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M7 10l5 5 5-5z\"/></svg>')",
+                backgroundRepeat: 'no-repeat',
+                backgroundPositionX: 'calc(100% -12px)',
+                backgroundPositionY: 'center',
+              }}
+          >
+            <option value="desc">Plus récent</option>
+            <option value="asc">Plus ancien</option>
+          </select>
+        </div>
+      </div>
+
           {/* Tasks Table */}
           <div className="overflow-x-auto">
             <table className="min-w-full bg-white border border-gray-200">
@@ -309,7 +377,7 @@ export default function ModelDetails() {
                 </tr>
               </thead>
               <tbody>
-                {tasks.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((task) => (
+              {sortedTasks.map((task) => (
                   <tr key={task._id} className="hover:bg-gray-100 transition">
                     <td className="px-6 py-4 whitespace-nowrap">{task.title}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -366,7 +434,7 @@ export default function ModelDetails() {
 
               {/* Réseau Social avec Icône */}
               <div className="flex items-center space-x-2 mb-2">
-              <p className="text-gray-700 capitalize"><strong>Réseau :</strong></p>
+                <p className="text-gray-700 capitalize"><strong>Réseau :</strong></p>
                 <img
                   src={`/icons/${selectedTask.socialPlatform.toLowerCase()}.svg`}
                   alt={selectedTask.socialPlatform}

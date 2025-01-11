@@ -22,6 +22,19 @@ export default function ModelDetails() {
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  const [selectedTask, setSelectedTask] = useState<any | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleViewTask = (task: any) => {
+    setSelectedTask(task); // Définir la tâche sélectionnée
+    setIsModalOpen(true); // Ouvrir la modale
+  };
+
+  const handleCloseModal = () => {
+    setSelectedTask(null); // Réinitialiser la tâche sélectionnée
+    setIsModalOpen(false); // Fermer la modale
+  };
+
   // Fetch model details and tasks
   useEffect(() => {
     const fetchModelDetails = async () => {
@@ -281,7 +294,10 @@ export default function ModelDetails() {
               <thead>
                 <tr>
                   <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
-                    Titre du post
+                    Titre
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    Réseau
                   </th>
                   <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                     Date et Heure
@@ -296,8 +312,28 @@ export default function ModelDetails() {
                 {tasks.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((task) => (
                   <tr key={task._id} className="hover:bg-gray-100 transition">
                     <td className="px-6 py-4 whitespace-nowrap">{task.title}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {/* Icône du réseau social */}
+                      <div className="flex items-center space-x-2">
+                        <img
+                          src={`/icons/${task.socialPlatform.toLowerCase()}.svg`}
+                          alt={task.socialPlatform}
+                          className="w-6 h-6"
+                          title={task.socialPlatform}
+                        />
+                      </div>
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">{new Date(task.date).toLocaleString()}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{calculateTimeRemaining(task.date)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      {/* Bouton Voir Plus */}
+                      <button
+                        onClick={() => handleViewTask(task)}
+                        className="text-blue-500 hover:text-blue-700"
+                      >
+                        Voir Plus
+                      </button>
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <button
                         onClick={() => handleDeleteTask(task._id)}
@@ -312,6 +348,59 @@ export default function ModelDetails() {
             </table>
           </div>
         </div>
+
+        {/* Modale pour les détails de la tâche */}
+        {isModalOpen && selectedTask && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full relative">
+              {/* Bouton pour fermer */}
+              <button
+                onClick={handleCloseModal}
+                className="absolute top-4 right-4 px-3 py-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition"
+              >
+                X
+              </button>
+
+              {/* Détails de la tâche */}
+              <h2 className="text-xl font-bold mb-4 text-gray-800">{selectedTask.title}</h2>
+
+              {/* Réseau Social avec Icône */}
+              <div className="flex items-center space-x-2 mb-2">
+              <p className="text-gray-700 capitalize"><strong>Réseau :</strong></p>
+                <img
+                  src={`/icons/${selectedTask.socialPlatform.toLowerCase()}.svg`}
+                  alt={selectedTask.socialPlatform}
+                  className="w-8 h-8"
+                  title={selectedTask.socialPlatform}
+                />
+              </div>
+
+              {/* Date de Publication */}
+              <p className="text-gray-700 mb-2"><strong>Date de Publication :</strong> {new Date(selectedTask.date).toLocaleString()}</p>
+
+              {/* Contenu */}
+              <p className="text-gray-700 mb-4"><strong>Contenu :</strong> {selectedTask.content}</p>
+
+              {/* Affichage de l'image ou vidéo si disponible */}
+              {selectedTask.filePath ? (
+                selectedTask.filePath.endsWith(".mp4") || selectedTask.filePath.endsWith(".mpeg") ? (
+                  <video controls className="mt-4 w-full rounded-lg shadow-md">
+                    <source src={`http://localhost:5001${selectedTask.filePath}`} type="video/mp4" />
+                    Votre navigateur ne supporte pas les vidéos.
+                  </video>
+                ) : (
+                  <img
+                    src={`http://localhost:5001${selectedTask.filePath}`}
+                    alt={selectedTask.title}
+                    className="mt-4 w-full rounded-lg shadow-md"
+                  />
+                )
+              ) : (
+                <p className="mt-4 text-gray-500">Aucun fichier associé.</p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Delete Confirmation Modal */}
         {showDeleteModal && (

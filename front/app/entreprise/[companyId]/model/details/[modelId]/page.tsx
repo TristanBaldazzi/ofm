@@ -213,7 +213,14 @@ export default function ModelDetails() {
             <select
               value={newTaskSocialPlatform}
               onChange={(e) => setNewTaskSocialPlatform(e.target.value)}
-              className="block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-300 bg-white"
+              className="block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none bg-white"
+              style={{
+                backgroundImage:
+                  "url('data:image/svg+xml;utf8,<svg fill=\"%23999\" height=\"20\" viewBox=\"0 0 24 24\" width=\"20\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M7 10l5 5 5-5z\"/></svg>')",
+                backgroundRepeat: 'no-repeat',
+                backgroundPositionX: 'calc(100% -12px)',
+                backgroundPositionY: 'center',
+              }}
               required
             >
               <option value="">Sélectionnez une plateforme</option>

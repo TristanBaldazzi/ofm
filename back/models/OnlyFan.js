@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const allowedPlatforms = ['TikTok', 'X', 'Threads', 'Bluesky'];
 
 const taskSchema = new mongoose.Schema({
+  content: { type: String, required: true },
   title: { type: String, required: true },
   description: { type: String },
   socialPlatform: { 
@@ -10,7 +11,8 @@ const taskSchema = new mongoose.Schema({
     required: true, 
     enum: ['TikTok', 'X', 'Threads', 'Bluesky'] // Restrict to these platforms 
   },
-  date: { type: Date, required: true }, 
+  date: { type: Date, required: true },
+  // past: { type: Boolean, default: false},
   createdAt: { type: Date, default: Date.now },
 });
 

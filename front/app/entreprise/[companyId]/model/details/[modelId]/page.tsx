@@ -16,6 +16,7 @@ export default function ModelDetails() {
   const [showDeleteModal, setShowDeleteModal] = useState(false); // State for delete confirmation modal
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDescription, setNewTaskDescription] = useState("");
+  const [newTaskContent, setNewTaskContent] = useState("");
   const [newTaskSocialPlatform, setNewTaskSocialPlatform] = useState("");
   const [newTaskDate, setNewTaskDate] = useState("");
 
@@ -70,6 +71,7 @@ export default function ModelDetails() {
           title: newTaskTitle,
           description: newTaskDescription,
           socialPlatform: newTaskSocialPlatform,
+          content: newTaskContent,
           date: newTaskDate,
         },
         { headers: { Authorization: `Bearer ${token}` } }
@@ -78,6 +80,7 @@ export default function ModelDetails() {
       setNewTaskTitle("");
       setNewTaskDescription("");
       setNewTaskSocialPlatform("");
+      setNewTaskContent("");
       setNewTaskDate("");
     } catch (err) {
       console.error(err);
@@ -85,7 +88,6 @@ export default function ModelDetails() {
     }
   };
 
-  // Handle deleting a task
   const handleDeleteTask = async (taskId: string) => {
     try {
       const token = localStorage.getItem("token");
@@ -100,12 +102,30 @@ export default function ModelDetails() {
     }
   };
 
+  const calculateTimeRemaining = (date: string) => {
+    const now = new Date();
+    const taskDate = new Date(date);
+    const diffInMs = taskDate.getTime() - now.getTime();
+
+    if (diffInMs <= 0) return "Déjà passé";
+
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+    if (diffInDays > 7) return `Dans ${Math.floor(diffInDays / 7)} semaines`;
+    if (diffInDays >= 1) return `Dans ${diffInDays} jours`;
+
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    if (diffInHours >= 1) return `Dans ${diffInHours} heures`;
+
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+    return `Dans ${diffInMinutes} minutes`;
+  };
+
   if (loading) return <LoadingSpinner />;
   if (error) return <p className="text-red-500">{error}</p>;
 
   return (
     <DashboardLayout>
-      <main className="flex-grow bg-gray-100 flex flex-col items-center justify-start p-6">
+      <main className="flex-grow bg-gray-100 flex flex-col items-center justify-start p-6 min-h-screen">
         {/* Model Details */}
         {model ? (
           <div className="bg-white shadow-lg rounded-lg p-8 max-w-xl w-full relative">
@@ -164,7 +184,7 @@ export default function ModelDetails() {
         )}
 
         {/* Tasks Section */}
-        <div className="bg-white shadow-lg rounded-lg p-8 max-w-xl w-full mt-6">
+        <div className="bg-white shadow-lg rounded-lg p-8 max-w-4xl w-full mt-6">
           <h2 className="text-xl font-bold mb-4">Tâches</h2>
 
           {/* Add Task Form */}
@@ -174,6 +194,13 @@ export default function ModelDetails() {
               placeholder="Titre de la tâche"
               value={newTaskTitle}
               onChange={(e) => setNewTaskTitle(e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring focus:ring-blue-300"
+              required
+            />
+            <textarea
+              placeholder="Contenu du post"
+              value={newTaskContent}
+              onChange={(e) => setNewTaskContent(e.target.value)}
               className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring focus:ring-blue-300"
               required
             />
@@ -215,24 +242,24 @@ export default function ModelDetails() {
             <table className="min-w-full bg-white border border-gray-200">
               <thead>
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Titre
+                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    Titre du post
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Description
+                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    Date et Heure
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Plateforme Sociale
+                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    Temps restant
                   </th>
-                  <th className="px-6 py-3"></th>
+                  <th className="px-6 py-4"></th>
                 </tr>
               </thead>
               <tbody>
-                {tasks.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((task) => (
-                  <tr key={task._id}>
+                {tasks.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((task) => (
+                  <tr key={task._id} className="hover:bg-gray-100 transition">
                     <td className="px-6 py-4 whitespace-nowrap">{task.title}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{task.description}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{task.socialPlatform}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{new Date(task.date).toLocaleString()}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{calculateTimeRemaining(task.date)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <button
                         onClick={() => handleDeleteTask(task._id)}

@@ -99,7 +99,7 @@ router.delete('/:companyId/:id', isAuth, checkAccessCompany, async (req, res) =>
 });
 
 router.post('/:companyId/model/:id/task', isAuth, async (req, res) => {
-  const { title, description, socialPlatform, date } = req.body;
+  const { title, description, socialPlatform, date, content } = req.body;
 
   try {
     const model = await OnlyFan.findOne({ _id: req.params.id, companyId: req.params.companyId });
@@ -108,7 +108,7 @@ router.post('/:companyId/model/:id/task', isAuth, async (req, res) => {
       return res.status(404).json({ error: 'Modèle non trouvé.' });
     }
 
-    const newTask = { title, description, socialPlatform, date };
+    const newTask = { title, description, socialPlatform, date, content };
     model.tasks.push(newTask);
     await model.save();
 
@@ -148,26 +148,26 @@ router.put('/:companyId/model/:id/task/:taskId', isAuth, async (req, res) => {
 
 router.delete('/:companyId/model/:id/task/:taskId', isAuth, async (req, res) => {
   try {
+    // Récupérer le modèle associé
     const model = await OnlyFan.findOne({ _id: req.params.id, companyId: req.params.companyId });
-
     if (!model) {
       return res.status(404).json({ error: 'Modèle non trouvé.' });
     }
 
-    const task = model.tasks.id(req.params.taskId);
-    if (!task) {
+    // Supprimer la tâche directement depuis le tableau en utilisant .pull()
+    const taskIndex = model.tasks.findIndex(task => task._id.toString() === req.params.taskId);
+    if (taskIndex === -1) {
       return res.status(404).json({ error: 'Tâche non trouvée.' });
     }
 
-    task.remove();
+    model.tasks.splice(taskIndex, 1); // Retirer la tâche du tableau
     await model.save();
 
     res.status(200).json({ message: 'Tâche supprimée avec succès.' });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Erreur lors de la suppression de la tâche." });
+    res.status(500).json({ error: 'Erreur lors de la suppression de la tâche.' });
   }
 });
-
 
 module.exports = router;

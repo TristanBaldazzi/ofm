@@ -1,10 +1,12 @@
 const express = require('express');
 const multer = require('multer');
 const router = express.Router();
+const path = require('path');
 const OnlyFan = require('../models/OnlyFan');
 const isAuth = require('../middleware/authMiddleware');
 const checkAccessCompany = require('../middleware/checkAccessCompany');
 const uploadTasks = require('../middleware/uploadTasks');
+const xlsx = require('xlsx');
 
 // Configuration Multer pour stocker les images dans /uploads/model
 const storage = multer.diskStorage({
@@ -17,6 +19,8 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage });
+
+const uploadExcel = multer({ dest: 'uploads/excel/' });
 
 // Créer un OnlyFan
 router.post('/create', isAuth, checkAccessCompany, upload.single('profilePicture'), async (req, res) => {
@@ -99,33 +103,95 @@ router.delete('/:companyId/:id', isAuth, checkAccessCompany, async (req, res) =>
   }
 });
 
-router.post('/:companyId/model/:id/task', isAuth, uploadTasks.single('file'), async (req, res) => {
-    const { title, description, socialPlatform, date, content } = req.body;
-
-    try {
-      const model = await OnlyFan.findOne({ _id: req.params.id, companyId: req.params.companyId });
-
-      if (!model) {
-        return res.status(404).json({ error: 'Modèle non trouvé.' });
-      }
-
-      let filePath = null;
-      if (req.file) {
-        filePath = `/uploads/tasks/${req.file.filename}`;
-      }
-
-      const newTask = { title, description, socialPlatform, date, content };
-      if (filePath) newTask.filePath = filePath; // Ajoutez le chemin du fichier si présent
-
-      model.tasks.push(newTask);
-      await model.save();
-
-      res.status(201).json({ message: 'Tâche ajoutée avec succès.', task: newTask });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: "Erreur lors de l'ajout de la tâche." });
+router.post('/:companyId/model/:id/tasks/import', uploadExcel.single('file'), async (req, res) => {
+  try {
+    const { file } = req;
+    if (!file) {
+      return res.status(400).json({ error: 'Aucun fichier fourni.' });
     }
+
+    // Lire le fichier Excel
+    const workbook = xlsx.readFile(file.path, { cellStyles: true });
+    const sheetName = workbook.SheetNames[0];
+    const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName], { raw: false });
+
+    // Valider et traiter les données
+    const allowedPlatforms = ['TikTok', 'X', 'Threads', 'Bluesky'];
+    const tasks = [];
+    const imageFolderPath = path.join(__dirname, '../uploads/tasks/');
+
+    for (const row of sheetData) {
+      if (!row.title || !row.socialPlatform || !row.date || !row.content) {
+        return res.status(400).json({ error: 'Certaines lignes sont incomplètes.' });
+      }
+      if (!allowedPlatforms.includes(row.socialPlatform)) {
+        return res.status(400).json({ error: `Plateforme invalide : ${row.socialPlatform}` });
+      }
+
+      let imagePath = null;
+      if (row.image) {
+        // Sauvegarder l'image encodée en base64
+        const base64Data = row.image.replace(/^data:image\/\w+;base64,/, '');
+        const imageName = `${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
+        imagePath = path.join(imageFolderPath, imageName);
+
+        fs.writeFileSync(imagePath, Buffer.from(base64Data, 'base64'));
+        imagePath = `/uploads/tasks/${imageName}`;
+      }
+
+      tasks.push({
+        title: row.title,
+        description: row.description || '',
+        socialPlatform: row.socialPlatform,
+        date: new Date(row.date),
+        content: row.content,
+        filePath: imagePath,
+      });
+    }
+
+    // Ajouter les tâches au modèle
+    const model = await OnlyFan.findOne({ _id: req.params.id, companyId: req.params.companyId });
+    if (!model) {
+      return res.status(404).json({ error: 'Modèle non trouvé.' });
+    }
+
+    model.tasks.push(...tasks);
+    await model.save();
+
+    res.status(201).json({ message: 'Tâches importées avec succès.', tasks });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erreur lors de l'importation des tâches." });
   }
+});
+
+router.post('/:companyId/model/:id/task', isAuth, uploadTasks.single('file'), async (req, res) => {
+  const { title, description, socialPlatform, date, content } = req.body;
+
+  try {
+    const model = await OnlyFan.findOne({ _id: req.params.id, companyId: req.params.companyId });
+
+    if (!model) {
+      return res.status(404).json({ error: 'Modèle non trouvé.' });
+    }
+
+    let filePath = null;
+    if (req.file) {
+      filePath = `/uploads/tasks/${req.file.filename}`;
+    }
+
+    const newTask = { title, description, socialPlatform, date, content };
+    if (filePath) newTask.filePath = filePath; // Ajoutez le chemin du fichier si présent
+
+    model.tasks.push(newTask);
+    await model.save();
+
+    res.status(201).json({ message: 'Tâche ajoutée avec succès.', task: newTask });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur lors de l'ajout de la tâche." });
+  }
+}
 );
 
 router.put('/:companyId/model/:id/task/:taskId', isAuth, async (req, res) => {

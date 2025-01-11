@@ -19,6 +19,8 @@ export default function ModelDetails() {
   const [newTaskContent, setNewTaskContent] = useState("");
   const [newTaskSocialPlatform, setNewTaskSocialPlatform] = useState("");
   const [newTaskDate, setNewTaskDate] = useState("");
+  const [fileExcel, setFileExcel] = useState(null);
+  const [successMessage, setSuccessMessage] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -27,6 +29,38 @@ export default function ModelDetails() {
   const [selectedTask, setSelectedTask] = useState<any | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+    }
+  };
+  
+  const handleImportTasks = async () => {
+    if (!file) {
+        setError("Veuillez sélectionner un fichier.");
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem("token");
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await axios.post(
+            `http://localhost:5001/api/fan/${companyId}/model/${modelId}/tasks/import`,
+            formData,
+            { headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" } }
+        );
+
+        setSuccessMessage(response.data.message);
+        setError("");
+    } catch (err) {
+        console.error(err);
+        setError("Erreur lors de l'importation des tâches.");
+    }
+};
+
 
   const handleViewTask = (task: any) => {
     setSelectedTask(task); // Définir la tâche sélectionnée
@@ -240,6 +274,16 @@ export default function ModelDetails() {
           <p>Aucun détail disponible pour ce modèle.</p>
         )}
 
+<input type="file" accept=".xlsx" onChange={handleFileChange} />
+            <button
+                onClick={handleImportTasks}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300"
+            >
+                Importer des tâches
+            </button>
+            {error && <p className="text-red-500 mt-2">{error}</p>}
+            {successMessage && <p className="text-green-500 mt-2">{successMessage}</p>}
+
         {/* Tasks Section */}
         <div className="bg-white shadow-lg rounded-lg p-8 max-w-4xl w-full mt-6">
           <h2 className="text-xl font-bold mb-4">Tâches</h2>
@@ -313,48 +357,47 @@ export default function ModelDetails() {
           </form>
 
           <div className="flex justify-between items-center mb-6">
-        {/* Filtres par Réseau Social */}
-        <div className="flex space-x-4">
-          {["TikTok", "X", "Threads", "Bluesky"].map((platform) => (
-            <button
-              key={platform}
-              onClick={() => handlePlatformToggle(platform)}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg border ${
-                selectedPlatforms.includes(platform)
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 text-gray-800"
-              }`}
-            >
-              <img
-                src={`/icons/${platform.toLowerCase()}.svg`}
-                alt={platform}
-                className="w-6 h-6"
-              />
-              <span>{platform}</span>
-            </button>
-          ))}
-        </div>
+            {/* Filtres par Réseau Social */}
+            <div className="flex space-x-4">
+              {["TikTok", "X", "Threads", "Bluesky"].map((platform) => (
+                <button
+                  key={platform}
+                  onClick={() => handlePlatformToggle(platform)}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg border ${selectedPlatforms.includes(platform)
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-100 text-gray-800"
+                    }`}
+                >
+                  <img
+                    src={`/icons/${platform.toLowerCase()}.svg`}
+                    alt={platform}
+                    className="w-6 h-6"
+                  />
+                  <span>{platform}</span>
+                </button>
+              ))}
+            </div>
 
-        {/* Tri par Date */}
-        <div className="flex items-center space-x-2">
-          <select
-            id="sortOrder"
-            value={sortOrder}
-            onChange={(e) => setSortOrder(e.target.value as "asc" | "desc")}
-            className="block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none bg-white"
-              style={{
-                backgroundImage:
-                  "url('data:image/svg+xml;utf8,<svg fill=\"%23999\" height=\"20\" viewBox=\"0 0 24 24\" width=\"20\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M7 10l5 5 5-5z\"/></svg>')",
-                backgroundRepeat: 'no-repeat',
-                backgroundPositionX: 'calc(100% -12px)',
-                backgroundPositionY: 'center',
-              }}
-          >
-            <option value="desc">Plus récent</option>
-            <option value="asc">Plus ancien</option>
-          </select>
-        </div>
-      </div>
+            {/* Tri par Date */}
+            <div className="flex items-center space-x-2">
+              <select
+                id="sortOrder"
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value as "asc" | "desc")}
+                className="block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none bg-white"
+                style={{
+                  backgroundImage:
+                    "url('data:image/svg+xml;utf8,<svg fill=\"%23999\" height=\"20\" viewBox=\"0 0 24 24\" width=\"20\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M7 10l5 5 5-5z\"/></svg>')",
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPositionX: 'calc(100% -12px)',
+                  backgroundPositionY: 'center',
+                }}
+              >
+                <option value="desc">Plus récent</option>
+                <option value="asc">Plus ancien</option>
+              </select>
+            </div>
+          </div>
 
           {/* Tasks Table */}
           <div className="overflow-x-auto">
@@ -377,7 +420,7 @@ export default function ModelDetails() {
                 </tr>
               </thead>
               <tbody>
-              {sortedTasks.map((task) => (
+                {sortedTasks.map((task) => (
                   <tr key={task._id} className="hover:bg-gray-100 transition">
                     <td className="px-6 py-4 whitespace-nowrap">{task.title}</td>
                     <td className="px-6 py-4 whitespace-nowrap">

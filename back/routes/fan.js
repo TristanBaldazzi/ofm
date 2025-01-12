@@ -149,7 +149,7 @@ router.post('/:companyId/model/:id/tasks/import', uploadExcel.single('file'), as
           if (imgData) {
             const imageName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${imgData.extension}`;
             const absoluteImagePath = path.join(imageFolderPath, imageName); // Chemin absolu pour sauvegarder l'image
-            const relativeImagePath = `uploads/tasks/${imageName}`; // Chemin relatif pour la base de données
+            const relativeImagePath = `${imageName}`; // Chemin relatif pour la base de données
 
             fs.writeFileSync(absoluteImagePath, imgData.buffer); // Sauvegarde de l'image sur le disque
             console.log(`Image sauvegardée : ${relativeImagePath}`);
@@ -198,7 +198,7 @@ router.post('/:companyId/model/:id/task', isAuth, uploadTasks.single('file'), as
 
     let filePath = null;
     if (req.file) {
-      filePath = `/uploads/tasks/${req.file.filename}`;
+      filePath = `${req.file.filename}`;
     }
 
     const newTask = { title, description, socialPlatform, date, content };

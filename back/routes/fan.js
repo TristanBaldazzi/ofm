@@ -1,5 +1,7 @@
 const express = require('express');
 const multer = require('multer');
+const ExcelJS = require('exceljs');
+const fs = require('fs');
 const router = express.Router();
 const path = require('path');
 const OnlyFan = require('../models/OnlyFan');
@@ -106,50 +108,66 @@ router.delete('/:companyId/:id', isAuth, checkAccessCompany, async (req, res) =>
 router.post('/:companyId/model/:id/tasks/import', uploadExcel.single('file'), async (req, res) => {
   try {
     const { file } = req;
+
+    // Vérification si un fichier a été fourni
     if (!file) {
       return res.status(400).json({ error: 'Aucun fichier fourni.' });
     }
 
-    // Lire le fichier Excel
-    const workbook = xlsx.readFile(file.path, { cellStyles: true });
-    const sheetName = workbook.SheetNames[0];
-    const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName], { raw: false });
+    // Charger le fichier Excel avec ExcelJS
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.readFile(file.path);
 
-    // Valider et traiter les données
-    const allowedPlatforms = ['TikTok', 'X', 'Threads', 'Bluesky'];
+    const worksheet = workbook.worksheets[0]; // Supposons que nous travaillons avec la première feuille
     const tasks = [];
     const imageFolderPath = path.join(__dirname, '../uploads/tasks/');
 
-    for (const row of sheetData) {
-      if (!row.title || !row.socialPlatform || !row.date || !row.content) {
-        return res.status(400).json({ error: 'Certaines lignes sont incomplètes.' });
-      }
-      if (!allowedPlatforms.includes(row.socialPlatform)) {
-        return res.status(400).json({ error: `Plateforme invalide : ${row.socialPlatform}` });
-      }
-
-      let imagePath = null;
-      if (row.image) {
-        // Sauvegarder l'image encodée en base64
-        const base64Data = row.image.replace(/^data:image\/\w+;base64,/, '');
-        const imageName = `${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
-        imagePath = path.join(imageFolderPath, imageName);
-
-        fs.writeFileSync(imagePath, Buffer.from(base64Data, 'base64'));
-        imagePath = `/uploads/tasks/${imageName}`;
-      }
-
-      tasks.push({
-        title: row.title,
-        description: row.description || '',
-        socialPlatform: row.socialPlatform,
-        date: new Date(row.date),
-        content: row.content,
-        filePath: imagePath,
-      });
+    // Créer le dossier des images s'il n'existe pas
+    if (!fs.existsSync(imageFolderPath)) {
+      fs.mkdirSync(imageFolderPath, { recursive: true });
     }
 
-    // Ajouter les tâches au modèle
+    // Parcourir les lignes pour extraire les données et les images
+    worksheet.eachRow({ includeEmpty: false }, (row, rowIndex) => {
+      if (rowIndex === 1) return; // Ignorer l'en-tête
+
+      const title = row.getCell(1).value; // Colonne A
+      const description = row.getCell(2).value; // Colonne B
+      const socialPlatform = row.getCell(3).value; // Colonne C
+      const date = row.getCell(4).value; // Colonne D
+      const content = row.getCell(5).value; // Colonne E
+
+      let imagePath = null;
+
+      // Extraire les images associées à cette ligne
+      const images = worksheet.getImages(); // Récupérer toutes les images de la feuille
+
+      for (const image of images) {
+        const { tl } = image.range; // Coordonnées de l'image (top-left)
+        if (tl.nativeRow === rowIndex - 1) { // Vérifier si l'image est associée à cette ligne
+          const imgData = workbook.model.media.find((m) => m.index === image.imageId); // Trouver l'image correspondante
+          if (imgData) {
+            const imageName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${imgData.extension}`;
+            const absoluteImagePath = path.join(imageFolderPath, imageName); // Chemin absolu pour sauvegarder l'image
+            const relativeImagePath = `uploads/tasks/${imageName}`; // Chemin relatif pour la base de données
+
+            fs.writeFileSync(absoluteImagePath, imgData.buffer); // Sauvegarde de l'image sur le disque
+            console.log(`Image sauvegardée : ${relativeImagePath}`);
+            imagePath = relativeImagePath; // Enregistrer uniquement le chemin relatif
+          }
+        }
+      }
+      console.log('Tâches à ajouter :', tasks);
+      tasks.push({
+        title,
+        description,
+        socialPlatform,
+        date,
+        content,
+        filePath: imagePath,
+      });
+    });
+
     const model = await OnlyFan.findOne({ _id: req.params.id, companyId: req.params.companyId });
     if (!model) {
       return res.status(404).json({ error: 'Modèle non trouvé.' });
@@ -158,10 +176,13 @@ router.post('/:companyId/model/:id/tasks/import', uploadExcel.single('file'), as
     model.tasks.push(...tasks);
     await model.save();
 
+    // Supprimer le fichier temporaire après traitement
+    fs.unlinkSync(file.path);
+
     res.status(201).json({ message: 'Tâches importées avec succès.', tasks });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Erreur lors de l'importation des tâches." });
+    console.error('Erreur lors de l\'importation des données :', error);
+    res.status(500).json({ error: "Erreur lors de l'importation des données." });
   }
 });
 

@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const http = require('http');
 const path = require('path');
+const { sendTweet } = require('./services/Twitter');
 
 const app = express();
 const server = http.createServer(app);
@@ -55,6 +56,16 @@ app.all('/uploads/*', (req, res) => {
   console.error(`Erreur : chemin invalide ${req.originalUrl}`);
   res.status(404).json({ error: 'Chemin invalide pour /uploads' });
 });
+
+const userTokens = {
+  username: 'User1',
+  twitterApiKey: 'vNSbaWp5DJQhoF8PpNOhZ3QM9',
+  twitterApiSecretKey: 'MnGRMLEI63duJs9dnQKMm59Ppey5ZPmPfADDBs4W4ZzLB4bInb',
+  accessToken: '1474152481802305549-aOT116FUWA0EQ7VUD2yvJuJtKZjr6H',
+  accessSecret: 'jWy1gsOuvv0YUPOIUFN0UD2RHyFFWcZOxyf6xXAfqQKrk',
+};
+
+// sendTweet('Bonjour, ceci est un test de tweet !', userTokens);
 
 // Démarrage du serveur
 const PORT = process.env.PORT || 5001;

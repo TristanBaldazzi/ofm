@@ -545,7 +545,7 @@ export default function ModelDetails() {
                   </video>
                 ) : (
                   <img
-                    src={`http://localhost:5001${selectedTask.filePath}`}
+                    src={`http://localhost:5001/${selectedTask.filePath}`}
                     alt={selectedTask.title}
                     className="mt-4 w-full rounded-lg shadow-md"
                   />

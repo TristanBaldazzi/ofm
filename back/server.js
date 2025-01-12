@@ -6,6 +6,7 @@ const cors = require('cors');
 const http = require('http');
 const path = require('path');
 const { sendTweet } = require('./services/Twitter');
+const OnlyFan = require('./models/OnlyFan');
 
 const app = express();
 const server = http.createServer(app);
@@ -56,6 +57,44 @@ app.all('/uploads/*', (req, res) => {
   console.error(`Erreur : chemin invalide ${req.originalUrl}`);
   res.status(404).json({ error: 'Chemin invalide pour /uploads' });
 });
+
+async function checkTasks() {
+  console.log("CheckTasks en cours...");
+  const now = new Date();
+  const profiles = await OnlyFan.find(); // Récupère tous les profils
+
+  for (const profile of profiles) {
+    for (const task of profile.tasks) {
+      if(task.past == true) return;
+      if (task.date < now && task.socialPlatform === 'X') {
+        console.log(`Task "${task.title}" is past due and is for platform X.`);
+
+        // Récupère les tokens Twitter du profil
+        const twitterTokens = profile.socialMedia.find(
+          (media) => media.platform === 'X'
+        )?.twitterTokens;
+
+        await OnlyFan.updateOne(
+          { _id: profile._id, 'tasks._id': task._id },
+          { $set: { 'tasks.$.past': true } }
+        );
+
+        if (twitterTokens) {
+          // Inclure le chemin de fichier s'il existe
+          await sendTweet(task.content, twitterTokens, task.filePath);
+        } else {
+          console.error(`No Twitter tokens found for profile: ${profile.name}`);
+        }
+      }
+    }
+  }
+}
+
+// Vérification initiale
+checkTasks();
+
+// Vérification toutes les 10 minutes
+setInterval(checkTasks, 10 * 60 * 1000);
 
 const userTokens = {
   username: 'User1',

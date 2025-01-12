@@ -58,7 +58,7 @@ const taskSchema = new mongoose.Schema({
   },
   date: { type: Date, required: true }, // Date d'exécution de la tâche
   filePath: { type: String }, // Chemin vers un fichier associé (optionnel)
-  // past: { type: Boolean, default: false},
+  past: { type: Boolean, default: false},
   createdAt: { type: Date, default: Date.now }, // Date de création automatique
 });
 

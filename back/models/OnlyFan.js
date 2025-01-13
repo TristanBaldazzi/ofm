@@ -10,17 +10,16 @@ const socialMediaSchema = new mongoose.Schema({
     enum: allowedPlatforms, // Limite les plateformes autorisées
     required: true,
   },
-  link: {
+  group: {
     type: String,
-    required: true,
-    validate: {
-      validator: function (v) {
-        return /^https?:\/\/.+$/.test(v); // Valide que le lien est une URL valide
-      },
-      message: (props) => `${props.value} n'est pas une URL valide.`,
+    default: function () {
+      return `Groupe ${this._id}`; // Nom par défaut du groupe
     },
   },
-  // Champs spécifiques aux plateformes
+  warn: {
+    state: { type: Boolean, default: false }, // État de l'avertissement
+    content: { type: String, required: function () { return this.state; } }, // Contenu requis si warn est true
+  },
   twitterTokens: {
     appKey: { type: String, default: '0' },
     appSecret: { type: String, default: '0' },
@@ -28,20 +27,44 @@ const socialMediaSchema = new mongoose.Schema({
     accessSecret: { type: String, default: '0' },
   },
   tiktokTokens: {
-    apiKey: { type: String, default: '0' }, // Exemple pour TikTok
-    secretKey: { type: String, default: '0' }, // Exemple pour TikTok
+    apiKey: { type: String, default: '0' },
+    secretKey: { type: String, default: '0' },
+  },
+  threadsTokens: {
+    appKey: { type: String, default: '0' },
+    appSecret: { type: String, default: '0' },
+    accessToken: { type: String, default: '0' },
+    accessSecret: { type: String, default: '0' },
+  },
+  blueskyTokens: {
+    name: { type: String, default: '0' },
+    pass: { type: String, default: '0' },
   },
 });
 
+
 socialMediaSchema.pre('validate', function (next) {
-  // Efface les tokens inutiles en fonction de la plateforme
   if (this.platform === 'X') {
-    this.tiktokTokens = undefined; // Supprime les tokens TikTok si la plateforme est Twitter
+    this.tiktokTokens = undefined;
+    this.blueskyTokens = undefined;
+    this.threadsTokens = undefined;
   } else if (this.platform === 'TikTok') {
-    this.twitterTokens = undefined; // Supprime les tokens Twitter si la plateforme est TikTok
+    this.blueskyTokens = undefined;
+    this.twitterTokens = undefined;
+    this.threadsTokens = undefined;
+  } else if (this.platform === 'Threads') {
+    this.twitterTokens = undefined;
+    this.tiktokTokens = undefined;
+    this.blueskyTokens = undefined;
+  } else if (this.platform === 'Bluesky') {
+    this.twitterTokens = undefined;
+    this.tiktokTokens = undefined;
+    this.threadsTokens = undefined;
   } else {
-    this.twitterTokens = undefined; // Supprime les tokens Twitter pour d'autres plateformes
-    this.tiktokTokens = undefined; // Supprime les tokens TikTok pour d'autres plateformes
+    this.twitterTokens = undefined;
+    this.tiktokTokens = undefined;
+    this.threadsTokens = undefined;
+    this.blueskyTokens = undefined;
   }
   next();
 });
@@ -71,7 +94,8 @@ const onlyFanSchema = new mongoose.Schema({
     ref: 'Company', 
     required: true,
   }, // Référence à une entreprise associée
-  socialMedia: [socialMediaSchema], // Liste des réseaux sociaux associés avec tokens spécifiques par plateforme
+  socialMediaGroupsCount: { type: Number, default: 0 },
+  socialMedia: { type: [socialMediaSchema], default: [] }, // Liste des réseaux sociaux associés avec tokens spécifiques par plateforme
   profilePicture: { 
     type: String, 
     default: '/uploads/default-profile.png',

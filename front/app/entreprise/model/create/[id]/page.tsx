@@ -87,22 +87,12 @@ export default function CreateModel() {
     setCurrentStep((prev) => prev - 1);
   };
 
-  // Ajouter un réseau social
-  const addSocialMediaField = () => {
-    setSocialMedia([...socialMedia, { platform: "", link: "" }]);
-  };
 
   // Supprimer un réseau social
   const removeSocialMediaField = (index: number) => {
     setSocialMedia(socialMedia.filter((_, i) => i !== index));
   };
 
-  // Mettre à jour un réseau social
-  const updateSocialMediaField = (index: number, key: "platform" | "link", value: string) => {
-    const updatedSocialMedia = [...socialMedia];
-    updatedSocialMedia[index][key] = value;
-    setSocialMedia(updatedSocialMedia);
-  };
 
   // Validation des URL
   const validateURL = (url: string): boolean => {
@@ -135,12 +125,12 @@ export default function CreateModel() {
           {/* Étape actuelle */}
           <div className="mb-6">
             <p className="text-gray-600 text-sm">
-              Étape {currentStep} sur 3
+              Étape {currentStep} sur 2
             </p>
             <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
               <div
                 className={`bg-blue-500 h-2.5 rounded-full`}
-                style={{ width: `${(currentStep / 3) * 100}%` }}
+                style={{ width: `${(currentStep / 2) * 100}%` }}
               ></div>
             </div>
           </div>
@@ -162,71 +152,8 @@ export default function CreateModel() {
             </div>
           )}
 
-          {/* Étape : Réseaux sociaux */}
-          {currentStep === 2 && (
-            <div>
-              <label className="block text-gray-700 text-sm font-bold mb-2">Réseaux sociaux</label>
-              {socialMedia.map((media, index) => (
-                <div key={index} className="flex items-center space-x-4 mb-2">
-                  {/* Sélection de la plateforme */}
-                  <select
-                    value={media.platform}
-                    onChange={(e) =>
-                      updateSocialMediaField(index, "platform", e.target.value)
-                    }
-                    className="block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none bg-white"
-                    style={{
-                      backgroundImage:
-                        "url('data:image/svg+xml;utf8,<svg fill=\"%23999\" height=\"20\" viewBox=\"0 0 24 24\" width=\"20\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M7 10l5 5 5-5z\"/></svg>')",
-                      backgroundRepeat: 'no-repeat',
-                      backgroundPositionX: 'calc(100% -12px)',
-                      backgroundPositionY: 'center',
-                    }}
-                    required
-                  >
-                    <option value="">Sélectionnez une plateforme</option>
-                    <option value="TikTok">TikTok</option>
-                    <option value="X">X</option>
-                    <option value="Threads">Threads</option>
-                    <option value="Bluesky">Bluesky</option>
-                  </select>
-
-                  {/* Lien */}
-                  <input
-                    type="url"
-                    placeholder="Lien"
-                    value={media.link}
-                    onChange={(e) =>
-                      updateSocialMediaField(index, "link", e.target.value)
-                    }
-                    className={`w-full border ${validateURL(media.link) ? "border-gray-300" : "border-red-500"
-                      } rounded-md p-2`}
-                    required
-                  />
-
-                  {/* Supprimer */}
-                  <button
-                    type="button"
-                    onClick={() => removeSocialMediaField(index)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    Supprimer
-                  </button>
-                </div>
-              ))}
-              {/* Ajouter un réseau social */}
-              <button
-                type="button"
-                onClick={addSocialMediaField}
-                className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-              >
-                Ajouter un réseau social
-              </button>
-            </div>
-          )}
-
           {/* Étape : Description */}
-          {currentStep === 3 && (
+          {currentStep === 2 && (
             <div>
               <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="description">
                 Description du modèle
@@ -251,7 +178,7 @@ export default function CreateModel() {
                 Précédent
               </button>
             )}
-            {currentStep < 3 ? (
+            {currentStep < 2 ? (
               <button
                 onClick={nextStep}
                 className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"

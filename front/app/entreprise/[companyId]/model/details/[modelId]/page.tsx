@@ -23,12 +23,19 @@ export default function ModelDetails() {
   const [successMessage, setSuccessMessage] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [socialMedia, setSocialMedia] = useState<string[]>([]);
+  const [selectedPlatformsSocial, setSelectedPlatformsSocial] = useState<string[]>([]);
+  const [isModalOpenSocial, setIsModalOpenSocial] = useState(false);
+  const [platform, setPlatform] = useState(""); // Plateforme sélectionnée
+  const [groupNumber, setGroupNumber] = useState(""); // Numéro de groupe
+  const [tokens, setTokens] = useState<any>({});
 
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
 
   const [selectedTask, setSelectedTask] = useState<any | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
@@ -86,6 +93,7 @@ export default function ModelDetails() {
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setModel(response.data);
+        setSocialMedia(response.data.socialMedia);
         setTasks(response.data.tasks); // Set tasks from the model data
       } catch (err) {
         console.error(err);
@@ -211,6 +219,55 @@ export default function ModelDetails() {
     return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
   });
 
+  const handleAddSocialMedia = async () => {
+    if (!platform || !groupNumber || Object.keys(tokens).length === 0) {
+      alert("Veuillez remplir tous les champs.");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+
+      // Appeler l'API pour ajouter un réseau social
+      const response = await axios.post(
+        `http://localhost:5001/api/fan/${companyId}/${modelId}/social-media`,
+        { platform, groupNumber, tokens },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Mettre à jour localement la liste des réseaux sociaux
+      setSocialMedia(response.data.socialMedia);
+
+      // Réinitialiser les champs et fermer la modale
+      setPlatform("");
+      setGroupNumber("");
+      setTokens({});
+      setIsModalOpenSocial(false);
+    } catch (err) {
+      console.error(err);
+      alert("Erreur lors de l'ajout du réseau social.");
+    }
+  };
+
+  // Supprimer un réseau social du modèle
+  const handleRemoveSocialMedia = async (platform: string, group: string) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      // Appeler l'API pour supprimer un réseau social spécifique
+      await axios.delete(
+        `http://localhost:5001/api/fan/${companyId}/${modelId}/social-media/${platform}/${group}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Mettre à jour localement la liste des réseaux sociaux après suppression
+      setSocialMedia(socialMedia.filter((media) => !(media.platform === platform && media.group === group)));
+    } catch (err) {
+      console.error(err);
+      alert("Erreur lors de la suppression du réseau social.");
+    }
+  };
+
   if (loading) return <LoadingSpinner />;
   if (error) return <p className="text-red-500">{error}</p>;
 
@@ -244,31 +301,6 @@ export default function ModelDetails() {
             <p className="text-gray-600 mt-4 text-center">
               {model.description || "Aucune description disponible."}
             </p>
-
-            {/* Réseaux sociaux */}
-            {model.socialMedia.length > 0 && (
-              <>
-                <h2 className="text-lg font-semibold text-gray-800 mt-6">Réseaux sociaux</h2>
-                <div className="flex justify-center space-x-4 mt-4">
-                  {model.socialMedia.map((social, index) => (
-                    <a
-                      key={index}
-                      href={social.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:opacity-80 transition"
-                    >
-                      <img
-                        src={`/icons/${social.platform.toLowerCase()}.svg`}
-                        alt={social.platform}
-                        className="w-10 h-10"
-                        title={social.platform}
-                      />
-                    </a>
-                  ))}
-                </div>
-              </>
-            )}
           </div>
         ) : (
           <p>Aucun détail disponible pour ce modèle.</p>
@@ -502,6 +534,184 @@ export default function ModelDetails() {
               </tbody>
             </table>
           </div>
+        </div>
+
+        {/* Gestion des réseaux sociaux */}
+        <div className="bg-white shadow-lg rounded-lg p-8 max-w-4xl w-full mt-6">
+          <h2 className="text-xl font-bold mb-4">Réseaux Sociaux</h2>
+
+          {/* Bouton pour ouvrir la modale */}
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 mb-4"
+          >
+            Ajouter un Réseau Social
+          </button>
+
+          {/* Tableau des réseaux sociaux */}
+          <div className="overflow-x-auto mt-6">
+            <table className="min-w-full bg-white border border-gray-200">
+              <thead>
+                <tr>
+                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    Plateforme
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    Groupe
+                  </th>
+                  <th className="px-6 py-4"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {socialMedia.map((media, index) => (
+                  <tr key={index} className="hover:bg-gray-100 transition">
+                    <td className="px-6 py-4 whitespace-nowrap">{media.platform}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{media.group}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <button
+                        onClick={() => handleRemoveSocialMedia(media.platform, media.group)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        Supprimer
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Modale pour ajouter un réseau social */}
+          {isModalOpen && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full relative">
+                {/* Bouton pour fermer */}
+                <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 text-red-500">
+                  X
+                </button>
+
+                {/* Formulaire pour ajouter un réseau social */}
+                <h2 className="text-xl font-bold mb-4">Ajouter un Réseau Social</h2>
+                <form onSubmit={(e) => e.preventDefault()}>
+                  {/* Sélection de la plateforme */}
+                  <div className="mb-4">
+                    <label>Plateforme</label>
+                    <select
+                      value={platform}
+                      onChange={(e) => setPlatform(e.target.value)}
+                      className="block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none bg-white"
+                      style={{
+                        backgroundImage:
+                          "url('data:image/svg+xml;utf8,<svg fill=\"%23999\" height=\"20\" viewBox=\"0 0 24 24\" width=\"20\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M7 10l5 5 5-5z\"/></svg>')",
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPositionX: 'calc(100% -12px)',
+                        backgroundPositionY: 'center',
+                      }}
+                      required
+                    >
+                      <option value="">Sélectionnez une plateforme</option>
+                      <option value="TikTok">TikTok</option>
+                      <option value="X">X</option>
+                      <option value="Threads">Threads</option>
+                      <option value="Bluesky">Bluesky</option>
+                    </select>
+                  </div>
+
+                  {/* Numéro de groupe */}
+                  <div className="mb-4">
+                    <label>Numéro de Groupe</label>
+                    <input
+                      type="number"
+                      value={groupNumber}
+                      onChange={(e) => setGroupNumber(e.target.value)}
+                      className="w-full p-2 border rounded"
+                      required
+                    />
+                  </div>
+
+                  {/* Champs spécifiques aux tokens */}
+                  {platform === "TikTok" && (
+                    <>
+                      <label>API Key</label>
+                      <input
+                        type="text"
+                        onChange={(e) => setTokens({ ...tokens, apiKey: e.target.value })}
+                        className="w-full p-2 border rounded"
+                        required
+                      />
+                      <label>Secret Key</label>
+                      <input
+                        type="text"
+                        onChange={(e) => setTokens({ ...tokens, secretKey: e.target.value })}
+                        className="w-full p-2 border rounded"
+                        required
+                      />
+                    </>
+                  )}
+                  {platform === "Bluesky" && (
+                    <>
+                      <label>Nom</label>
+                      <input
+                        type="text"
+                        onChange={(e) => setTokens({ ...tokens, name: e.target.value })}
+                        className="w-full p-2 border rounded"
+                        required
+                      />
+                      <label>Mot de passe</label>
+                      <input
+                        type="text"
+                        onChange={(e) => setTokens({ ...tokens, pass: e.target.value })}
+                        className="w-full p-2 border rounded"
+                        required
+                      />
+                    </>
+                  )}
+                  {platform === "X" && (
+                    <>
+                      <label>appKey</label>
+                      <input
+                        type="text"
+                        onChange={(e) => setTokens({ ...tokens, appKey: e.target.value })}
+                        className="w-full p-2 border rounded"
+                        required
+                      />
+                      <label>appSecret</label>
+                      <input
+                        type="text"
+                        onChange={(e) => setTokens({ ...tokens, appSecret: e.target.value })}
+                        className="w-full p-2 border rounded"
+                        required
+                      />
+                      <label>accessToken</label>
+                      <input
+                        type="text"
+                        onChange={(e) => setTokens({ ...tokens, accessToken: e.target.value })}
+                        className="w-full p-2 border rounded"
+                        required
+                      />
+                      <label>accessSecret</label>
+                      <input
+                        type="text"
+                        onChange={(e) => setTokens({ ...tokens, accessSecret: e.target.value })}
+                        className="w-full p-2 border rounded"
+                        required
+                      />
+                    </>
+                  )}
+                  {/* Ajoutez d'autres champs similaires pour Threads */}
+
+                  {/* Bouton pour soumettre */}
+                  <button
+                    onClick={handleAddSocialMedia}
+                    type="button"
+                    className="w-full bg-blue-500 text-white py-2 mt-4 rounded"
+                  >
+                    Ajouter Réseau Social
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Modale pour les détails de la tâche */}

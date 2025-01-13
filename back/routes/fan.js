@@ -9,6 +9,7 @@ const isAuth = require('../middleware/authMiddleware');
 const checkAccessCompany = require('../middleware/checkAccessCompany');
 const uploadTasks = require('../middleware/uploadTasks');
 const xlsx = require('xlsx');
+const { BskyAgent } = require('@atproto/api');
 
 // Configuration Multer pour stocker les images dans /uploads/model
 const storage = multer.diskStorage({
@@ -26,27 +27,14 @@ const uploadExcel = multer({ dest: 'uploads/excel/' });
 
 // Créer un OnlyFan
 router.post('/create', isAuth, checkAccessCompany, upload.single('profilePicture'), async (req, res) => {
-  const { name, description, companyId, socialMedia } = req.body;
-  console.log(req.body);
+  const { name, description, companyId } = req.body; // Pas besoin de récupérer socialMedia ici
   try {
-    const allowedPlatforms = ['TikTok', 'X', 'Threads', 'Bluesky'];
-    if (
-      socialMedia.some(
-        (media) => !allowedPlatforms.includes(media.platform)
-      )
-    ) {
-      return res.status(400).json({
-        message:
-          "Seuls TikTok, X, Threads et Bluesky sont acceptés comme plateformes.",
-      });
-    }
     const profilePicturePath = req.file ? `/uploads/model/${req.file.filename}` : undefined;
 
     const newModel = new OnlyFan({
       name,
       description,
       companyId,
-      socialMedia,
       profilePicture: profilePicturePath || '/uploads/model/default-profile.png',
     });
 
@@ -263,6 +251,127 @@ router.delete('/:companyId/model/:id/task/:taskId', isAuth, async (req, res) => 
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Erreur lors de la suppression de la tâche.' });
+  }
+});
+
+const allowedPlatforms = ["TikTok", "X", "Threads", "Bluesky"];
+
+async function verifyBlueskyConnection(username, password) {
+  const agent = new BskyAgent({
+    service: 'https://bsky.social', // URL du service Bluesky
+  });
+
+  try {
+    // Tenter de se connecter avec les identifiants
+    await agent.login({ identifier: username, password: password });
+    return true;
+  } catch (error) {
+    console.error("Erreur de connexion :", error.message); // Connexion échouée
+    return false;
+  }
+}
+
+const platformTokenRequirements = {
+  TikTok: ["apiKey", "secretKey"],
+  X: ["appKey", "appSecret", "accessToken", "accessSecret"],
+  Threads: ["appKey", "appSecret", "accessToken", "accessSecret"],
+  Bluesky: ["name", "pass"],
+};
+
+// Route pour ajouter un réseau social
+router.post("/:companyId/:modelId/social-media", isAuth, async (req, res) => {
+  try {
+    const { modelId } = req.params;
+    const { platform, groupNumber, tokens } = req.body;
+
+    // Vérifiez que toutes les informations nécessaires sont fournies
+    if (!platform || !groupNumber || !tokens) {
+      return res.status(400).json({ message: "Données manquantes." });
+    }
+
+    // Vérifiez si la plateforme est Bluesky et testez la connexion
+    if (platform === "Bluesky") {
+      const { name, pass } = tokens;
+
+      if (!name || !pass) {
+        return res.status(400).json({
+          message: "Nom et mot de passe requis pour se connecter à Bluesky.",
+        });
+      }
+
+      try {
+        const isConnected = await verifyBlueskyConnection(name, pass);
+        if (isConnected) {
+          console.log("Connexion réussie à Bluesky."); // Loguez si la connexion réussit
+        } else {
+        return res.status(400).json({
+          message: "Connexion à Bluesky échouée. Veuillez vérifier vos identifiants.",
+        });
+        }
+      } catch (err) {
+        console.error(err.message);
+        return res.status(400).json({
+          message: "Connexion à Bluesky échouée. Veuillez vérifier vos identifiants.",
+        });
+      }
+    }
+
+    // Récupérer le modèle OnlyFan
+    const model = await OnlyFan.findById(modelId);
+    if (!model) {
+      return res.status(404).json({ message: "Modèle non trouvé." });
+    }
+
+    // Ajouter le réseau social au modèle
+    model.socialMedia.push({
+      platform,
+      group: `Groupe ${groupNumber}`,
+      [`${platform.toLowerCase()}Tokens`]: tokens,
+    });
+
+    await model.save();
+
+    res.status(201).json({
+      message: `Le réseau social ${platform} a été ajouté avec succès.`,
+      socialMedia: model.socialMedia,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur interne du serveur." });
+  }
+});
+
+router.delete("/:companyId/:modelId/social-media/:platform/:group", isAuth, async (req, res) => {
+  try {
+    const { modelId, platform, group } = req.params;
+
+    // Récupérer le modèle OnlyFan
+    const model = await OnlyFan.findById(modelId);
+    if (!model) {
+      return res.status(404).json({ message: "Modèle non trouvé." });
+    }
+
+    // Filtrer les réseaux sociaux pour supprimer celui correspondant
+    const initialLength = model.socialMedia.length;
+    model.socialMedia = model.socialMedia.filter(
+      (media) => !(media.platform === platform && media.group === group)
+    );
+
+    if (model.socialMedia.length === initialLength) {
+      return res.status(404).json({
+        message: `Le réseau social ${platform} dans le groupe ${group} n'a pas été trouvé.`,
+      });
+    }
+
+    await model.save();
+
+    res.status(200).json({
+      message: `Le réseau social ${platform} a été supprimé du groupe ${group}.`,
+      socialMedia: model.socialMedia,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur interne du serveur." });
   }
 });
 

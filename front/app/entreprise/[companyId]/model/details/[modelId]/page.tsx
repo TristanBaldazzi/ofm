@@ -19,6 +19,7 @@ export default function ModelDetails() {
   const [newTaskContent, setNewTaskContent] = useState("");
   const [newTaskSocialPlatform, setNewTaskSocialPlatform] = useState("");
   const [newTaskDate, setNewTaskDate] = useState("");
+  const [newTaskGroup, setNewTaskGroup] = useState("");
   const [fileExcel, setFileExcel] = useState(null);
   const [successMessage, setSuccessMessage] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -132,6 +133,7 @@ export default function ModelDetails() {
       formData.append("socialPlatform", newTaskSocialPlatform);
       formData.append("content", newTaskContent);
       formData.append("date", newTaskDate);
+      formData.append("group", newTaskGroup);
 
       if (file) formData.append("file", file); // Ajoutez le fichier s'il existe
 
@@ -154,6 +156,7 @@ export default function ModelDetails() {
       setNewTaskSocialPlatform("");
       setNewTaskContent("");
       setNewTaskDate("");
+      setNewTaskGroup("");
       setFile(null);
 
       if (fileInputRef.current) {
@@ -362,6 +365,14 @@ export default function ModelDetails() {
               className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring focus:ring-blue-300"
               required
             />
+            <input
+              type="text"
+              placeholder="Groupe 1"
+              value={newTaskGroup}
+              onChange={(e) => setNewTaskGroup(e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring focus:ring-blue-300"
+              required
+            />
             <textarea
               placeholder="Contenu du post"
               value={newTaskContent}
@@ -492,6 +503,9 @@ export default function ModelDetails() {
                   <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                     Temps restant
                   </th>
+                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    Groupe
+                  </th>
                   <th className="px-6 py-4"></th>
                 </tr>
               </thead>
@@ -512,6 +526,7 @@ export default function ModelDetails() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">{new Date(task.date).toLocaleString()}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{calculateTimeRemaining(task.date)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{task.group}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       {/* Bouton Voir Plus */}
                       <button
@@ -521,14 +536,14 @@ export default function ModelDetails() {
                         Voir Plus
                       </button>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                    {/* <td className="px-6 py-4 whitespace-nowrap text-right">
                       <button
                         onClick={() => handleDeleteTask(task._id)}
                         className="text-red-500 hover:text-red-700"
                       >
                         Supprimer
                       </button>
-                    </td>
+                    </td> */}
                   </tr>
                 ))}
               </tbody>
@@ -542,7 +557,7 @@ export default function ModelDetails() {
 
           {/* Bouton pour ouvrir la modale */}
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => setIsModalOpenSocial(true)}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 mb-4"
           >
             Ajouter un Réseau Social
@@ -553,6 +568,9 @@ export default function ModelDetails() {
             <table className="min-w-full bg-white border border-gray-200">
               <thead>
                 <tr>
+                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    Compte
+                  </th>
                   <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                     Plateforme
                   </th>
@@ -565,6 +583,10 @@ export default function ModelDetails() {
               <tbody>
                 {socialMedia.map((media, index) => (
                   <tr key={index} className="hover:bg-gray-100 transition">
+                    {/* Vérification de la plateforme pour afficher le bon contenu */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {media.platform === "Bluesky" ? media.blueskyTokens.name : "Nom du compte"}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">{media.platform}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{media.group}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
@@ -581,12 +603,13 @@ export default function ModelDetails() {
             </table>
           </div>
 
+
           {/* Modale pour ajouter un réseau social */}
-          {isModalOpen && (
+          {isModalOpenSocial && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
               <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full relative">
                 {/* Bouton pour fermer */}
-                <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 text-red-500">
+                <button onClick={() => setIsModalOpenSocial(false)} className="absolute top-4 right-4 text-red-500">
                   X
                 </button>
 
@@ -621,7 +644,8 @@ export default function ModelDetails() {
                   <div className="mb-4">
                     <label>Numéro de Groupe</label>
                     <input
-                      type="number"
+                      placeholder="Groupe 1"
+                      type="text"
                       value={groupNumber}
                       onChange={(e) => setGroupNumber(e.target.value)}
                       className="w-full p-2 border rounded"

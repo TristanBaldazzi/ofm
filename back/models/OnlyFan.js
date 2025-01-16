@@ -80,6 +80,7 @@ const taskSchema = new mongoose.Schema({
     enum: allowedPlatforms, // Plateformes limitées aux valeurs autorisées
   },
   group: { type: String, required: true },
+  type : {type: String, required: true},
   date: { type: Date, required: true }, // Date d'exécution de la tâche
   filePath: { type: String }, // Chemin vers un fichier associé (optionnel)
   past: { type: Boolean, default: false},

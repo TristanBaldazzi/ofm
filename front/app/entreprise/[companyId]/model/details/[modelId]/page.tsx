@@ -96,6 +96,7 @@ export default function ModelDetails() {
   const [newTaskDescription, setNewTaskDescription] = useState("");
   const [newTaskContent, setNewTaskContent] = useState("");
   const [newTaskSocialPlatform, setNewTaskSocialPlatform] = useState("");
+  const [newTaskType, setNewTaskType] = useState("");
   const [newTaskDate, setNewTaskDate] = useState("");
   const [newTaskGroup, setNewTaskGroup] = useState("");
   const [fileExcel, setFileExcel] = useState(null);
@@ -270,6 +271,7 @@ export default function ModelDetails() {
       formData.append("content", newTaskContent);
       formData.append("date", newTaskDate);
       formData.append("group", newTaskGroup);
+      formData.append("type", newTaskType);
 
       if (file) formData.append("file", file); // Ajoutez le fichier s'il existe
 
@@ -290,6 +292,7 @@ export default function ModelDetails() {
       setNewTaskTitle("");
       setNewTaskDescription("");
       setNewTaskSocialPlatform("");
+      setNewTaskType("");
       setNewTaskContent("");
       setNewTaskDate("");
       setNewTaskGroup("");
@@ -563,6 +566,24 @@ export default function ModelDetails() {
               <option value="X">X</option>
               <option value="Threads">Threads</option>
               <option value="Bluesky">Bluesky</option>
+            </select>
+
+            <select
+              value={newTaskType}
+              onChange={(e) => setNewTaskType(e.target.value)}
+              className="block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm appearance-none bg-white"
+              style={{
+                backgroundImage:
+                  "url('data:image/svg+xml;utf8,<svg fill=\"%23999\" height=\"20\" viewBox=\"0 0 24 24\" width=\"20\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M7 10l5 5 5-5z\"/></svg>')",
+                backgroundRepeat: 'no-repeat',
+                backgroundPositionX: 'calc(100% -12px)',
+                backgroundPositionY: 'center',
+              }}
+              required
+            >
+              <option value="">Sélectionnez un type</option>
+              <option value="post">Post</option>
+              <option value="like-all">liker tous les commentaires</option>
             </select>
             <input
               type="datetime-local"
@@ -901,6 +922,7 @@ export default function ModelDetails() {
 
               {/* Date de Publication */}
               <p className="text-gray-700 mb-2"><strong>Date de Publication :</strong> {new Date(selectedTask.date).toLocaleString()}</p>
+              <p className="text-gray-700 mb-4"><strong>Type :</strong> {selectedTask.type}</p>
 
               {/* Contenu */}
               <p className="text-gray-700 mb-4"><strong>Contenu :</strong> {selectedTask.content}</p>
@@ -916,12 +938,25 @@ export default function ModelDetails() {
                   <img
                     src={`http://localhost:5001/uploads/tasks/${selectedTask.filePath}`}
                     alt={selectedTask.title}
-                    className="mt-4 w-full rounded-lg shadow-md"
+                    className="mt-4 w-1/2 rounded-lg shadow-md"
                   />
                 )
               ) : (
                 <p className="mt-4 text-gray-500">Aucun fichier associé.</p>
               )}
+
+              {/* Bouton Supprimer la tâche */}
+              <div className="flex justify-center mt-6">
+                <button
+                  onClick={() => {
+                    handleDeleteTask(selectedTask._id); // Fonction pour supprimer la tâche
+                    handleCloseModal(); // Fonction pour fermer le modal
+                  }}
+                  className="px-6 py-2 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 transition"
+                >
+                  Supprimer la tâche
+                </button>
+              </div>
             </div>
           </div>
         )}

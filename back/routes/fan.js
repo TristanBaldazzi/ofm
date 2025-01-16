@@ -124,7 +124,8 @@ router.post('/:companyId/model/:id/tasks/import', uploadExcel.single('file'), as
       const socialPlatform = row.getCell(3).value; // Colonne C
       const date = row.getCell(4).value; // Colonne D
       const content = row.getCell(5).value; // Colonne E
-      const group = row.getCell(7).value; // Colonne E
+      const group = row.getCell(7).value; // Colonne G
+      const type = row.getCell(8).value; // Colonne H
 
       let imagePath = null;
 
@@ -154,7 +155,8 @@ router.post('/:companyId/model/:id/tasks/import', uploadExcel.single('file'), as
         date,
         content,
         filePath: imagePath,
-        group
+        group,
+        type
       });
     });
 
@@ -177,7 +179,7 @@ router.post('/:companyId/model/:id/tasks/import', uploadExcel.single('file'), as
 });
 
 router.post('/:companyId/model/:id/task', isAuth, uploadTasks.single('file'), async (req, res) => {
-  const { title, description, socialPlatform, date, content, group } = req.body;
+  const { title, description, socialPlatform, date, content, group, type } = req.body;
 
   try {
     const model = await OnlyFan.findOne({ _id: req.params.id, companyId: req.params.companyId });
@@ -191,7 +193,7 @@ router.post('/:companyId/model/:id/task', isAuth, uploadTasks.single('file'), as
       filePath = `${req.file.filename}`;
     }
 
-    const newTask = { title, description, socialPlatform, date, content, group };
+    const newTask = { title, description, socialPlatform, date, content, group, type };
     if (filePath) newTask.filePath = filePath; // Ajoutez le chemin du fichier si présent
 
     model.tasks.push(newTask);

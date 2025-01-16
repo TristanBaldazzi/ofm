@@ -820,18 +820,3 @@ export default function ModelDetails() {
     </DashboardLayout>
   );
 }
-
-function getSocialIcon(platform: string): string {
-  switch (platform) {
-    case "TikTok":
-      return "/icons/tiktok.svg";
-    case "X":
-      return "/icons/x.svg";
-    case "Threads":
-      return "/icons/threads.svg";
-    case "Bluesky":
-      return "/icons/bluesky.svg";
-    default:
-      return "/icons/default.svg";
-  }
-}

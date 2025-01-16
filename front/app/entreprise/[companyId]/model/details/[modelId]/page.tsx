@@ -5,6 +5,85 @@ import axios from "axios";
 import { useParams, useRouter } from "next/navigation";
 import DashboardLayout from "@/components/DashboardLayout";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import { Fab, Menu, MenuItem } from '@mui/material';
+
+
+const FloatingMenu = ({
+  onChangeGroupClick,
+}: {
+  onChangeGroupClick: () => void;
+}) => {
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        bottom: '20px',
+        right: '20px',
+        backgroundColor: '#ffffff',
+        boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)',
+        borderRadius: '8px',
+        padding: '12px',
+        zIndex: 1000,
+      }}
+    >
+      <button
+        onClick={onChangeGroupClick}
+        style={{
+          display: 'block',
+          padding: '10px 20px',
+          backgroundColor: '#007bff',
+          color: '#fff',
+          borderRadius: '6px',
+          border: 'none',
+          cursor: 'pointer',
+          fontSize: '16px',
+        }}
+      >
+        Changer le groupe
+      </button>
+    </div>
+  );
+};
+
+const GroupMenu = ({ groups, onSelectGroup }: { groups: string[]; onSelectGroup: (group: string) => void }) => {
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        bottom: '80px', // Adjusted to appear above the floating menu
+        right: '20px',
+        backgroundColor: '#ffffff',
+        boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)',
+        borderRadius: '8px',
+        padding: '12px',
+        zIndex: 1001,
+      }}
+    >
+      <h3 style={{ marginBottom: '10px', fontSize: '16px', fontWeight: 'bold' }}>Sélectionnez un groupe</h3>
+      {groups.map((group) => (
+        <button
+          key={group}
+          onClick={() => onSelectGroup(group)}
+          style={{
+            display: 'block',
+            padding: '8px 12px',
+            marginBottom: '6px',
+            backgroundColor: '#f8f9fa',
+            borderRadius: '6px',
+            border: '1px solid #ddd',
+            cursor: 'pointer',
+            textAlign: 'left',
+            width: '100%',
+          }}
+        >
+          {group}
+        </button>
+      ))}
+    </div>
+  );
+};
+
+
 
 export default function ModelDetails() {
   const { companyId, modelId } = useParams(); // Get companyId and modelId from the URL
@@ -36,6 +115,64 @@ export default function ModelDetails() {
   const [selectedTask, setSelectedTask] = useState<any | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  const [groups, setGroups] = useState<string[]>([]);
+
+  useEffect(() => {
+    // Fetch unique group names from tasks or networks
+    const uniqueGroups = Array.from(new Set(tasks.map((task) => task.group)));
+    setGroups(uniqueGroups);
+  }, [tasks]);
+
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [showFloatingMenu, setShowFloatingMenu] = useState(false);
+  const [showGroupMenu, setShowGroupMenu] = useState(false); // For the group submenu
+
+  useEffect(() => {
+    // Fetch unique groups from tasks
+    const uniqueGroups = Array.from(new Set(tasks.map((task) => task.group)));
+    setGroups(uniqueGroups);
+  }, [tasks]);
+
+  const handleItemSelection = (itemId: string) => {
+    setSelectedItems((prevSelected) => {
+      const updatedSelection = prevSelected.includes(itemId)
+        ? prevSelected.filter((id) => id !== itemId)
+        : [...prevSelected, itemId];
+
+      setShowFloatingMenu(updatedSelection.length > 0); // Show menu if more than 2 items are selected
+      return updatedSelection;
+    });
+  };
+
+  const handleChangeGroup = async (newGroup: string) => {
+    try {
+      const token = localStorage.getItem("token");
+      await Promise.all(
+        selectedItems.map((itemId) =>
+          axios.patch(
+            `http://localhost:5001/api/fan/${companyId}/${modelId}/task/${itemId}`,
+            { group: newGroup },
+            { headers: { Authorization: `Bearer ${token}` } }
+          )
+        )
+      );
+      // Update local state after successful update
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          selectedItems.includes(task._id)
+            ? { ...task, group: newGroup }
+            : task
+        )
+      );
+      setSelectedItems([]); // Clear selection
+      alert("Group updated successfully!");
+    } catch (error) {
+      console.error("Error updating group:", error);
+      alert("Failed to update group.");
+    }
+  };
+
 
 
   const handleFileChange = (e) => {
@@ -488,17 +625,17 @@ export default function ModelDetails() {
 
           {/* Tasks Table */}
           <div className="overflow-x-auto">
-            <table className="min-w-full bg-white border border-gray-200">
+            <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow-sm">
               <thead>
-                <tr>
+                <tr className="bg-gray-100">
+                  <th className="px-6 py-4 text-center text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    <input type="checkbox" disabled className="cursor-not-allowed opacity-50" />
+                  </th>
                   <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                     Titre
                   </th>
                   <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                     Réseau
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
-                    Date et Heure
                   </th>
                   <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                     Temps restant
@@ -511,7 +648,15 @@ export default function ModelDetails() {
               </thead>
               <tbody>
                 {sortedTasks.map((task) => (
-                  <tr key={task._id} className="hover:bg-gray-100 transition">
+                  <tr key={task._id} className="hover:bg-gray-50 transition">
+                    <td className="px-6 py-4 text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedItems.includes(task._id)}
+                        onChange={() => handleItemSelection(task._id)}
+                        className="form-checkbox h-5 w-5 text-blue-600"
+                      />
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">{task.title}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {/* Icône du réseau social */}
@@ -524,26 +669,17 @@ export default function ModelDetails() {
                         />
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">{new Date(task.date).toLocaleString()}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{calculateTimeRemaining(task.date)}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{task.group}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       {/* Bouton Voir Plus */}
                       <button
                         onClick={() => handleViewTask(task)}
-                        className="text-blue-500 hover:text-blue-700"
+                        className="text-blue-500 hover:text-blue-700 font-medium"
                       >
                         Voir Plus
                       </button>
                     </td>
-                    {/* <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <button
-                        onClick={() => handleDeleteTask(task._id)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        Supprimer
-                      </button>
-                    </td> */}
                   </tr>
                 ))}
               </tbody>
@@ -789,6 +925,24 @@ export default function ModelDetails() {
               )}
             </div>
           </div>
+        )}
+
+        {/* Floating Menu */}
+        {showFloatingMenu && (
+          <FloatingMenu
+            onChangeGroupClick={() => setShowGroupMenu(true)} // Open group submenu
+          />
+        )}
+
+        {/* Group Selection Submenu */}
+        {showGroupMenu && (
+          <GroupMenu
+            groups={groups}
+            onSelectGroup={(group) => {
+              handleChangeGroup(group); // Update group for selected items
+              setShowGroupMenu(false); // Close submenu after selection
+            }}
+          />
         )}
 
         {/* Delete Confirmation Modal */}

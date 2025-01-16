@@ -377,4 +377,35 @@ router.delete("/:companyId/:modelId/social-media/:platform/:group", isAuth, asyn
   }
 });
 
+// Update task group
+router.patch('/:companyId/:id/task/:taskId', isAuth, async (req, res) => {
+  const { group } = req.body; // Extract the new group from the request body
+
+  try {
+    // Find the model by companyId and modelId
+    const model = await OnlyFan.findOne({ _id: req.params.id, companyId: req.params.companyId });
+
+    if (!model) {
+      return res.status(404).json({ error: 'Modèle non trouvé.' });
+    }
+
+    // Find the specific task by taskId
+    const task = model.tasks.id(req.params.taskId);
+    if (!task) {
+      return res.status(404).json({ error: 'Tâche non trouvée.' });
+    }
+
+    // Update the group field
+    task.group = group || task.group;
+
+    // Save the updated model
+    await model.save();
+
+    res.status(200).json({ message: 'Groupe de la tâche mis à jour avec succès.', task });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur lors de la mise à jour du groupe de la tâche." });
+  }
+});
+
 module.exports = router;

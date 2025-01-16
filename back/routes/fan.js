@@ -122,10 +122,14 @@ router.post('/:companyId/model/:id/tasks/import', uploadExcel.single('file'), as
       const title = row.getCell(1).value; // Colonne A
       const description = row.getCell(2).value; // Colonne B
       const socialPlatform = row.getCell(3).value; // Colonne C
-      const date = row.getCell(4).value; // Colonne D
+      let date = row.getCell(4).value; // Colonne D
       const content = row.getCell(5).value; // Colonne E
       const group = row.getCell(7).value; // Colonne G
       const type = row.getCell(8).value; // Colonne H
+
+      if (date && new Date(date) < new Date()) {
+        date = new Date();
+      }
 
       let imagePath = null;
 
@@ -179,7 +183,7 @@ router.post('/:companyId/model/:id/tasks/import', uploadExcel.single('file'), as
 });
 
 router.post('/:companyId/model/:id/task', isAuth, uploadTasks.single('file'), async (req, res) => {
-  const { title, description, socialPlatform, date, content, group, type } = req.body;
+  const { title, description, socialPlatform, date: inputDate, content, group, type } = req.body;
 
   try {
     const model = await OnlyFan.findOne({ _id: req.params.id, companyId: req.params.companyId });
@@ -191,6 +195,11 @@ router.post('/:companyId/model/:id/task', isAuth, uploadTasks.single('file'), as
     let filePath = null;
     if (req.file) {
       filePath = `${req.file.filename}`;
+    }
+
+    let date = inputDate;
+    if (date && new Date(date) < new Date()) {
+      date = new Date(); // Remplace par la date actuelle
     }
 
     const newTask = { title, description, socialPlatform, date, content, group, type };
